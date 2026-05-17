@@ -83,11 +83,8 @@ export default function WorldMonitor2D() {
           
           {/* จำลองรูปทวีปสไตล์พิกเซลเกม 8-Bit (วาดด้วยเส้นขอบเรดาร์แสงนีออน) */}
           <svg style={styles.worldVectorOverlay} viewBox="0 0 100 100" preserveAspectRatio="none">
-            {/* อเมริกาเหนือ/ใต้ */}
             <path d="M 10,20 Q 20,15 25,25 T 30,45 Q 25,55 32,75 T 35,90 Q 25,75 22,50 T 12,35 Z" fill="none" stroke="#1d3557" strokeWidth="0.6" strokeDasharray="1,1" />
-            {/* ยูเรเชีย / แอฟริกา */}
             <path d="M 45,25 Q 55,20 70,18 T 88,25 Q 90,45 80,55 T 75,75 Q 65,85 55,70 T 48,45 Z" fill="none" stroke="#1d3557" strokeWidth="0.6" strokeDasharray="1,1" />
-            {/* ออสเตรเลีย */}
             <path d="M 78,70 Q 85,68 88,75 T 80,85 Z" fill="none" stroke="#1d3557" strokeWidth="0.6" strokeDasharray="1,1" />
           </svg>
 
@@ -107,7 +104,6 @@ export default function WorldMonitor2D() {
                 onMouseEnter={() => setHoveredPin(pin)}
                 onMouseLeave={() => setHoveredPin(null)}
               >
-                {/* วงแหวนสะท้อนคลื่นวิทยุว่อนขยายตัว (Red Alert Style) */}
                 <div style={{ ...styles.pinRadarPulse, borderColor: markerColor, boxShadow: `0 0 8px ${markerColor}` }} />
                 <div style={{ ...styles.pinCore, backgroundColor: markerColor }} />
                 
@@ -136,7 +132,7 @@ export default function WorldMonitor2D() {
         </div>
       </section>
 
-      {/* LOWER ARCHITECTURE: แบ่งส่วน 70:30 ตามโครงสร้างระบบตรวจสอบยุทธวิธี */}
+      {/* LOWER ARCHITECTURE: แบ่งส่วน 35:65 ตามโครงสร้างระบบตรวจสอบยุทธวิธี */}
       <section style={styles.bottomGrid}>
         
         {/* แผงควบคุมฝั่งซ้าย (ช่องสัญญาณ) */}
@@ -183,25 +179,33 @@ export default function WorldMonitor2D() {
           </div>
         </div>
 
-        {/* แผงจำลองการรับส่งข้อมูลฝั่งขวา (แก้ไขปัญหา 404 และการโดนบล็อกเฟรม) */}
+        {/* แผงจำลองการรับส่งข้อมูลฝั่งขวา (อัปเดตแสดงภาพสมรภูมิยุทธศาสตร์แทน Iframe) */}
         <div style={styles.panelCardRight}>
           <div style={styles.panelHeader}>
             <span>⚡ LIVE MONITOR INTERFACE: {dataChannels[activeChannel].title}</span>
           </div>
           <div style={styles.panelBody}>
             
-            {/* หน้าต่างจำลอง Secure Data Monitor แทนการยัด iframe ดิบที่โดนบล็อก */}
+            {/* กล่องบรรจุภาพ Live-Feed ยุทธวิธีสไตล์เกม Red Alert */}
             <div style={styles.secureDisplayBox}>
-              <div style={styles.secureHeader}>
-                <span style={styles.secureDot}>●</span> SECURITY BYPASS ACTIVE
+              <div style={styles.imageStreamContainer}>
+                {/* ดึงรูปแผนที่ต้นแบบที่สมบูรณ์แบบมาขึ้นจอแสดงผลแบบไร้ปัญหากรอบบล็อก */}
+                <img 
+                  src="/Gemini_Generated_Image_nvm58snvm58snvm5.png" 
+                  alt="Soviet Tactical Intel Map" 
+                  style={styles.streamedTacticalImage} 
+                />
+                
+                {/* เลเยอร์ HUD สแกนข้อความครอบบนแผ่นภาพ */}
+                <div style={styles.hudOverlayLabel}>CH {activeChannel + 1} LIVE INTELLIGENCE FEED</div>
               </div>
+
               <div style={styles.secureContent}>
-                <h3 style={styles.secureTitle}>{dataChannels[activeChannel].title}</h3>
-                <p style={styles.secureDesc}>{dataChannels[activeChannel].desc}</p>
+                <h4 style={styles.secureTitle}>{dataChannels[activeChannel].title}</h4>
                 
                 <div style={styles.alertTerminalBox}>
-                  <div>[STATUS] เครือข่ายปลายทางจำกัดสิทธิ์การฝังเฟรมภายในแอปพลิเคชัน</div>
-                  <div>[ACTION] เปิดลิงก์ตรงผ่านโครงข่ายควบคุมระยะไกลเพื่อความเสถียร 100%</div>
+                  <div>[LINK] {dataChannels[activeChannel].url}</div>
+                  <div>[INTEL] {dataChannels[activeChannel].desc}</div>
                 </div>
 
                 <a 
@@ -210,7 +214,7 @@ export default function WorldMonitor2D() {
                   rel="noopener noreferrer" 
                   style={styles.launchButton}
                 >
-                  🚀 เข้าสู่เว็บไซต์ระบบหลัก (Direct Access)
+                  🚀 คลิกเปิดหน้าต่างตรวจสอบข้อมูลดิบภายนอก (Direct Access)
                 </a>
               </div>
             </div>
@@ -542,54 +546,68 @@ const styles: { [key: string]: React.CSSProperties } = {
     backgroundColor: "#000000",
     border: "1px solid #222",
     borderRadius: "2px",
-    padding: "15px",
+    padding: "10px",
     display: "flex",
     flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center",
-    textAlign: "center"
+    gap: "10px"
   },
-  secureHeader: {
+  imageStreamContainer: {
+    position: "relative",
+    width: "100%",
+    height: "170px",
+    backgroundColor: "#050505",
+    border: "1px solid #333",
+    borderRadius: "2px",
+    overflow: "hidden"
+  },
+  streamedTacticalImage: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    opacity: 0.85
+  },
+  hudOverlayLabel: {
+    position: "absolute",
+    top: "8px",
+    left: "8px",
+    backgroundColor: "rgba(0,0,0,0.75)",
+    border: "1px solid #ffaa00",
     color: "#ffaa00",
-    fontSize: "10px",
-    fontWeight: "bold",
-    letterSpacing: "1px",
-    marginBottom: "10px"
+    fontSize: "8px",
+    padding: "2px 6px",
+    fontWeight: "bold"
   },
-  secureDot: {
-    animation: "pulse 1s infinite",
-    marginRight: "4px"
+  secureContent: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
+    width: "100%"
   },
   secureTitle: {
     color: "#ffffff",
-    fontSize: "14px",
-    margin: "0 0 5px 0"
-  },
-  secureDesc: {
-    color: "#888",
-    fontSize: "11px",
-    margin: "0 0 15px 0",
-    maxWidth: "80%"
+    fontSize: "12px",
+    margin: 0,
+    textAlign: "left"
   },
   alertTerminalBox: {
     backgroundColor: "#080000",
     border: "1px dashed #ff3333",
-    padding: "8px 12px",
+    padding: "6px 10px",
     fontSize: "10px",
     color: "#ff8888",
     textAlign: "left",
-    marginBottom: "15px",
-    lineHeight: "1.5"
+    lineHeight: "1.4"
   },
   launchButton: {
     backgroundColor: "#ff3333",
     color: "#ffffff",
     textDecoration: "none",
-    padding: "8px 16px",
+    padding: "8px 12px",
     fontSize: "11px",
     fontWeight: "bold",
     borderRadius: "2px",
-    boxShadow: "0 0 10px rgba(255,51,51,0.3)"
+    textAlign: "center",
+    boxShadow: "0 0 10px rgba(255,51,51,0.2)"
   },
   metricRow: {
     display: "flex",
