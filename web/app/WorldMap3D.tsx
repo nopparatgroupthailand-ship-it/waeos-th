@@ -3,7 +3,7 @@
 import React from "react";
 
 export default function WorldMap3D() {
-  // จำลองพิกัดดวงไฟสัญญาณตามยุทธวิธี (พี่สามารถปรับเปลี่ยนหรือดึงจาก API เพิ่มเติมได้)
+  // จำลองพิกัดดวงไฟสัญญาณตามยุทธวิธี
   const signalNodes = [
     { id: 1, top: "25%", left: "28%", color: "#00f0ff", type: "Normal" },
     { id: 2, top: "18%", left: "51%", color: "#ffaa00", type: "Elevated" },
@@ -22,7 +22,7 @@ export default function WorldMap3D() {
         height: "100%", 
         minHeight: "500px",
         backgroundColor: "#080c10",
-        // ดึงรูปภาพจาก /public มาทำเป็นพื้นหลังระบบเธียเตอร์แบบอัตโนมัติ
+        // ดึงรูปภาพพื้นหลังจากห้องควบคุมระบบ
         backgroundImage: "url('/Gemini_Generated_Image_nvm58snvm58snvm5.png')",
         backgroundSize: "cover",
         backgroundPosition: "center",
@@ -33,7 +33,7 @@ export default function WorldMap3D() {
         boxShadow: "inset 0 0 30px rgba(0,0,0,0.8)"
       }}
     >
-      {/* เส้นกริดดิจิทัลครอบทับจอบางๆ เพื่อความสมจริงของระบบ Monitor */}
+      {/* เส้นกริดดิจิทัลครอบทับจอบางๆ */}
       <div 
         style={{
           position: "absolute",
@@ -107,8 +107,8 @@ export default function WorldMap3D() {
         ))}
       </div>
 
-      {/* CSS Animation สำหรับบังคับให้ดวงไฟกะพริบคล้ายจอเรดาร์ทหาร */}
-      <style tag="tactical-radar-style">{`
+      {/* ✅ แก้ไขจุดนี้: เอา attribute 'tag' ออก เพื่อให้ TypeScript ปล่อยผ่านสำเร็จ */}
+      <style>{`
         @keyframes tacticalPulse {
           0% { transform: scale(0.2); opacity: 0.8; }
           100% { transform: scale(1.5); opacity: 0; }
