@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 
-// พิกัดยุทธศาสตร์โลก (Lat/Lng ตรงตามแผนที่สากล)
+// 📍 กำหนดพิกัดโหนดสัญญาณยุทธวิธี (คำนวณลงตำแหน่งพิกเซลจาก Lat/Lng จริงบนแผนที่โลก)
 const strategicNodes = [
   { id: 1, lat: 18.1446, lng: 100.1403, color: "#00ff66", label: "PHRAE HQ (THAILAND)", country: "TH" },
   { id: 2, lat: 55.7558, lng: 37.6173, color: "#ff3333", label: "MOSCOW OUTPOST", country: "RU" },
@@ -12,16 +12,15 @@ const strategicNodes = [
 
 export default function WorldMapCanvasTheater() {
   const [currentTimeStr, setCurrentTimeStr] = useState<string>("");
-  const [utcHour, setUtcHour] = useState<number>(12); // เก็บค่าชั่วโมง UTC ปัจจุบันเพื่อคำนวณเงา
-  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  const [utcHour, setUtcHour] = useState<number>(12); // ใช้คำนวณตำแหน่งเงาจากเวลามาตรฐานโลก
 
-  // 🕒 1. ดักจับเวลาโลก (UTC) แบบ Real-time เพื่อคำนวณตำแหน่งดวงอาทิตย์
+  // 🕒 1. นาฬิกาตรวจจับเวลาโลกดักจับนาที/ชั่วโมง เพื่อขับเคลื่อนม่านเงา Real-time
   useEffect(() => {
     const updateGlobalClock = () => {
       const now = new Date();
-      // แสดงฟอร์แมตเวลาบนจอแบบทหาร
+      // แสดงฟอร์แมตเวลาทหารบนหน้าจอ HUD
       setCurrentTimeStr(now.toUTCString().replace("GMT", "UTC"));
-      // ใช้เวลา UTC ในการคำนวณตำแหน่งความมืด-สว่างของโลก
+      // แปลงเวลาปัจจุบันเป็นจำนวนชั่วโมงสะสมในระบบ UTC
       setUtcHour(now.getUTCHours() + now.getUTCMinutes() / 60);
     };
 
@@ -30,16 +29,14 @@ export default function WorldMapCanvasTheater() {
     return () => clearInterval(interval);
   }, []);
 
-  // 🗺️ 2. สูตรคณิตศาสตร์แปลงค่าภูมิศาสตร์ (Lat/Lng) ไปเป็นเปอร์เซ็นต์บนหน้าจอพิกเซล
+  // 🗺️ 2. ฟังก์ชันแปลงค่าภูมิศาสตร์เป็นพิกัดเปอร์เซ็นต์ซ้อนทับภาพ (Equirectangular Projection)
   const convertGeoToPercent = (lat: number, lng: number) => {
-    // ปรับชดเชยระยะขอบของภาพพิกเซลเพื่อให้จุดปักตรงประเทศพอดี
     const x = ((lng + 180) / 360) * 100;
     const y = ((90 - lat) / 180) * 100;
     return { left: `${x}%`, top: `${y}%` };
   };
 
-  // 🌌 3. คำนวณหาตำแหน่ง "ม่านเงากลางคืน" วิ่งจากขวาไปซ้ายตามเวลาหมุนของโลก
-  // เที่ยงคืน UTC (00:00) เงาหนาจะอยู่ตรงกลางแผนที่พอดี (0 องศา)
+  // 🌌 3. คำนวณตำแหน่งองศาและระยะเยื้องของเงาตามการหมุนรอบตัวเองของโลก
   const shadowOffset = (utcHour / 24) * 100;
 
   return (
@@ -48,10 +45,12 @@ export default function WorldMapCanvasTheater() {
       <header style={styles.header}>
         <div style={styles.brandZone}>
           <div style={styles.pulseDot}></div>
-          <span style={styles.brandTitle}>ENGAGEMENT THEATER <span style={styles.versionBadge}>v3.0 CYBERRADAR</span></span>
+          <span style={styles.brandTitle}>
+            ENGAGEMENT THEATER <span style={styles.versionBadge}>v3.2 CLEAN_AXIS</span>
+          </span>
         </div>
         <div style={styles.statusDisplay}>
-          <span style={{ color: "#00ff66" }}>● GLOBAL TIME MONITOR ACTIVE</span>
+          <span style={{ color: "#00ff66" }}>● DYNAMIC TERMINATOR ENGINE ACTIVE</span>
         </div>
         <div style={styles.clockZone}>
           <span style={styles.clockLabel}>REALTIME UTC SYSTEM</span>
@@ -59,58 +58,61 @@ export default function WorldMapCanvasTheater() {
         </div>
       </header>
 
-      {/* TACTICAL MAP AREA */}
+      {/* MAIN MONITOR THEATER */}
       <section style={styles.mapTheater}>
         <div style={styles.mapWrapper}>
           
-          {/* Layer 1: ภาพ 8-bit พื้นหลังดั้งเดิมของพี่บน GitHub */}
+          {/* Layer 1: ภาพพื้นหลังโหมดกลางวัน ( map_day.png.png ) */}
           <img 
-            src="/Gemini_Generated_Image_nvm58snvm58snvm5.png" 
-            alt="Tactical 8Bit Background" 
+            src="/map_day.png.png" 
+            alt="Tactical Map Day" 
             style={styles.mapBackground}
           />
 
-          {/* Layer 2: ม่านเงากลางคืนอัตโนมัติ (Dynamic Day/Night Overlay) */}
-          {/* ส่วนที่โดนเงาครอบทับ = กลางคืน | ส่วนที่โล่ง = กลางวัน */}
+          {/* Layer 2: ม่านเงาย้อมสีพื้นหลังฝั่งที่เป็นกลางคืนตามเวลาจริงทั่วโลก */}
           <div 
             style={{
               ...styles.nightShadowLayer,
               background: `linear-gradient(90deg, 
-                rgba(5, 10, 25, 0.75) 0%, 
-                rgba(5, 10, 25, 0.4) 20%, 
-                rgba(0, 0, 0, 0) 40%, 
-                rgba(0, 0, 0, 0) 60%, 
-                rgba(5, 10, 25, 0.4) 80%, 
-                rgba(5, 10, 25, 0.75) 100%)`,
-              // ขยับเงาตามแกน X ของโลกเรียลไทม์ (หมุนตะวันออกไปตะวันตะวันตก)
+                rgba(4, 7, 20, 0.78) 0%, 
+                rgba(4, 7, 20, 0.45) 20%, 
+                rgba(0, 0, 0, 0) 45%, 
+                rgba(0, 0, 0, 0) 55%, 
+                rgba(4, 7, 20, 0.45) 80%, 
+                rgba(4, 7, 20, 0.78) 100%)`,
+              // เลื่อนตำแหน่งม่านเงาพาดผ่านแผนที่จากทิศตะวันออกไปยังทิศตะวันตกตามเวลา UTC จริง
               transform: `translateX(calc(-50% + ${(shadowOffset + 50) % 100}%))`,
             }}
           />
 
-          {/* Layer 3: แผ่นกริดเลเซอร์บางๆ พาดผ่านจอคอมพิวเตอร์ทหาร */}
+          {/* Layer 3: แผงไฟเรืองแสงกลางคืน ( map_night.png ) จะเฟดสว่างขึ้นในจุดที่เข้าสู่มุมมืด */}
+          <div style={styles.nightOverlayContainer}>
+            <img 
+              src="/map_night.png" 
+              alt="Tactical Map Night Lights" 
+              style={styles.mapBackground}
+            />
+          </div>
+
+          {/* Layer 4: ตะแกรงเส้นสแกนเรดาร์ดิจิทัล (Cyber Grid Lines) */}
           <div style={styles.gridOverlay} />
 
-          {/* Layer 4: ไอคอน + จุดตรวจจับความร้อน (Hotspots) วางทับด้วยระบบพิกัดเปอร์เซ็นต์ */}
+          {/* Layer 5: ระบบคำนวณปักหมุดเรดาร์กะพริบและรายงานสถานะรายประเทศ */}
           {strategicNodes.map((node) => {
             const { left, top } = convertGeoToPercent(node.lat, node.lng);
             
-            // ตรวจสอบแบบคร่าวๆ ว่าโหนดนั้นๆ อยู่ในโซนมืดหรือสว่างจากค่า Longitude เทียบกับเวลา UTC
+            // คำนวณเวลาท้องถิ่นแบบคร่าวๆ จากเส้นแวง (Longitude) เพื่อเช็คความมืด-สว่างเฉพาะจุด
             const localHour = (utcHour + node.lng / 15 + 24) % 24;
             const isNodeNight = localHour >= 18 || localHour < 6;
 
             return (
-              <div 
-                key={node.id} 
-                style={{ ...styles.radarTarget, left, top }}
-                onMouseEnter={() => setHoveredNode(node.label)}
-                onMouseLeave={() => setHoveredNode(null)}
-              >
-                {/* วงแหวนเรดาร์กะพริบ (Hotspot Circle Effect) */}
+              <div key={node.id} style={{ ...styles.radarTarget, left, top }}>
+                {/* วงแหวนรัศมีเรดาร์กะพริบ */}
                 <div style={{ ...styles.radarPulse, borderColor: node.color }} />
-                {/* จุดไข่แดงแกนกลาง */}
+                {/* แกนกลางเป้าหมาย */}
                 <div style={{ ...styles.radarCore, backgroundColor: node.color, boxShadow: `0 0 12px ${node.color}` }} />
                 
-                {/* หน้าต่างป้ายข้อมูลอัจฉริยะ (Dynamic Tooltip) บอกสถานะสว่าง/มืด ทันที */}
+                {/* หน้าต่างป้ายข้อมูลอัจฉริยะประเมินสภาวะแสงแบบ Real-time */}
                 <div style={styles.tooltipBox}>
                   <div style={{ color: "#ffaa00", fontWeight: "bold" }}>{node.label}</div>
                   <div style={{ color: isNodeNight ? "#94a3b8" : "#00ff66", fontSize: "9px", marginTop: "2px" }}>
@@ -124,18 +126,18 @@ export default function WorldMapCanvasTheater() {
         </div>
       </section>
 
-      {/* BOTTOM ANALYSIS BAR */}
+      {/* BOTTOM INTEL FEED TICKER */}
       <footer style={styles.footerBar}>
-        <div style={styles.intelBadge}>SYS INSIGHT</div>
+        <div style={styles.intelBadge}>INTEL FEED</div>
         <div style={styles.intelText}>
-          [ANALYTICS] เงากลางคืนจำลองคำนวณจากมุมตกกระทบของดวงอาทิตย์อ้างอิงเวลานาฬิกา UTC ปัจจุบัน | โหนดภูมิภาคเอเชีย (TH/RU) เข้าสู่เขตปฏิบัติการกลางคืนอย่างสมบูรณ์ | โซนอเมริกา (US) อยู่ในเขตแสงสว่าง...
+          [SYSTEM LOG] ซิงโครไนซ์ไฟล์ภาพสำเร็จ: map_day.png.png และ map_night.png ทำงานร่วมกับเอนจินควบคุมระดับความสว่างพิกัดโลกเรียลไทม์...
         </div>
       </footer>
     </div>
   );
 }
 
-/* TACTICAL ENGINE STYLES */
+/* 🎨 STRATEGIC STYLES ENGINE */
 const styles: { [key: string]: React.CSSProperties } = {
   dashboardContainer: { backgroundColor: "#04060a", color: "#fff", fontFamily: "monospace", width: "100%", minHeight: "100vh", display: "flex", flexDirection: "column" },
   header: { backgroundColor: "#090d16", borderBottom: "2px solid #ff3333", height: "50px", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 20px", zIndex: 100 },
@@ -148,24 +150,23 @@ const styles: { [key: string]: React.CSSProperties } = {
   clockLabel: { display: "block", fontSize: "8px", color: "#475569" },
   clockText: { fontSize: "12px", color: "#ffaa00", fontWeight: "bold" },
   
-  // โซนแสดงแผนที่หลัก
+  // กรอบโรงภาพยนตร์แผงมอนิเตอร์
   mapTheater: { flex: 1, backgroundColor: "#020406", display: "flex", justifyContent: "center", alignItems: "center", padding: "10px", position: "relative" },
   mapWrapper: { position: "relative", width: "100%", height: "100%", maxWidth: "1200px", aspectRatio: "24/11", overflow: "hidden", border: "2px solid #1e293b", borderRadius: "6px" },
   mapBackground: { width: "100%", height: "100%", objectFit: "cover" },
   
-  // 🌌 เลเยอร์เงาครอบทับ (โหมดคูณสี Mix-Blend-Mode ช่วยให้ภาพพื้นหลังไม่สูญเสียความละเอียด 8-Bit)
+  // 🌌 เลเยอร์ม่านเงามืดคูณสีลงบนชั้นแผนที่ (Mix-Blend-Mode ช่วยรักษาเม็ดพิกเซล 8-bit ไม่ให้สูญเสียรายละเอียด)
   nightShadowLayer: { position: "absolute", top: 0, left: 0, width: "200%", height: "100%", pointerEvents: "none", mixBlendMode: "multiply", transition: "transform 0.5s linear", zIndex: 10 },
-  gridOverlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.01) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.01) 1px, transparent 1px)", backgroundSize: "20px 20px", pointerEvents: "none", zIndex: 20 },
   
-  // จุดพิกัดเรดาร์ Hotspot ต่างๆ บนแผนที่
-  radarTarget: { position: "absolute", width: "16px", height: "16px", transform: "translate(-50%, -50%)", zIndex: 30, cursor: "pointer" },
+  // 🌙 เลเยอร์ควบคุมแสงไฟเมืองเวลากลางคืน ซ้อนทับด้านบนม่านเงา
+  nightOverlayContainer: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", mixBlendMode: "screen", opacity: 0.85, zIndex: 12 },
+  
+  gridOverlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px)", backgroundSize: "20px 20px", pointerEvents: "none", zIndex: 20 },
+  radarTarget: { position: "absolute", width: "16px", height: "16px", transform: "translate(-50%, -50%)", zIndex: 30 },
   radarCore: { width: "6px", height: "6px", borderRadius: "50%", position: "absolute", top: "5px", left: "5px" },
   radarPulse: { width: "16px", height: "16px", border: "1px solid", borderRadius: "50%", position: "absolute", top: 0, left: 0, animation: "radarGlow 2s infinite linear" },
-  
-  // กล่อง Tooltip บอกรายละเอียดความสว่างแต่ละโหนด
   tooltipBox: { position: "absolute", bottom: "22px", left: "50%", transform: "translateX(-50%)", backgroundColor: "rgba(9,13,22,0.95)", border: "1px solid #334155", padding: "5px 10px", borderRadius: "4px", fontSize: "10px", whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(0,0,0,0.6)", pointerEvents: "none" },
   
-  // แถบวิ่งด้านล่างสุด
   footerBar: { height: "32px", backgroundColor: "#090d16", borderTop: "1px solid #1e293b", display: "flex", alignItems: "center" },
   intelBadge: { backgroundColor: "#ff3333", color: "#fff", fontSize: "9px", fontWeight: "bold", padding: "0 12px", height: "100%", display: "flex", alignItems: "center" },
   intelText: { fontSize: "11px", color: "#94a3b8", paddingLeft: "15px", whiteSpace: "nowrap", overflow: "hidden" }
