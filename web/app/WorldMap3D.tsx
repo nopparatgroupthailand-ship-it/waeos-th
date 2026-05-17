@@ -1,42 +1,26 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import DynamicGlobe from "react-force-graph-3d";
 
 export default function WorldMap3D() {
-  const globeRef = useRef<any>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (mounted && globeRef.current) {
-      globeRef.current.pointOfView({ lat: 13, lng: 100, altitude: 2.5 });
-      const scene = globeRef.current.scene();
-      const lights = scene.children.filter((obj: any) => obj.type === "DirectionalLight");
-      if (lights.length > 0) {
-        const now = new Date();
-        const hours = now.getHours();
-        const sunAngle = (hours / 24) * Math.PI * 2;
-        lights[0].position.set(Math.cos(sunAngle) * 300, 0, Math.sin(sunAngle) * 300);
-      }
-    }
-  }, [mounted]);
-
-  if (!mounted) return <div className="text-gray-500">กำลังโหลดแผนที่ 3D...</div>;
-
   return (
-    <div className="w-full h-full flex items-center justify-center">
-      <DynamicGlobe 
-        ref={globeRef}
-        showAtmosphere={true}
-        atmosphereAltitude={0.15}
-        atmosphereColor="rgba(20, 184, 166, 0.5)"
-        backgroundImageUrl="https://unpkg.com/three-globe/example/img/night-sky.png"
-        bumpImageUrl="https://unpkg.com/three-globe/example/img/earth-topology.png"
-        globeImageUrl="https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
-      />
+    <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-white p-8 relative overflow-hidden select-none">
+      {/* ลายเส้น Grid ตกแต่งด้านหลัง */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-60" />
+      
+      {/* แสงเรืองออร่าโทน Teal (แบบไทย) */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-teal-500/10 rounded-full blur-[120px]" />
+
+      <div className="z-10 text-center space-y-4">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 text-xs font-medium tracking-wide">
+          <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
+          SYSTEM ONLINE
+        </div>
+        <h2 className="text-2xl font-bold tracking-tight text-slate-100 sm:text-3xl">
+          WAEOS-TH MONITORING
+        </h2>
+        <p className="text-sm text-slate-400 max-w-sm mx-auto">
+          ระบบขับเคลื่อนข้อมูลอัตโนมัติ พร้อมประมวลผลโครงสร้างแผงควบคุมเพื่อการตรวจสอบภายใน
+        </p>
+      </div>
     </div>
   );
 }
