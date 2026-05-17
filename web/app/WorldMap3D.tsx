@@ -1,47 +1,136 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 
-export default function DebugImage() {
-  const [imgStatus, setImgStatus] = useState<string>("กำลังตรวจสอบช่องสัญญาณภาพ...");
-  const [resolvedPath, setResolvedPath] = useState<string>("");
-  const imageName = "Gemini_Generated_Image_nvm58snvm58snvm5.png";
-
-  useEffect(() => {
-    // เช็คพิกัดปัจจุบันของโดเมนที่รันอยู่บน Vercel
-    setResolvedPath(`${window.location.origin}/${imageName}`);
-  }, []);
+export default function WorldMap3D() {
+  // จำลองพิกัดดวงไฟสัญญาณตามยุทธวิธี (พี่สามารถปรับเปลี่ยนหรือดึงจาก API เพิ่มเติมได้)
+  const signalNodes = [
+    { id: 1, top: "25%", left: "28%", color: "#00f0ff", type: "Normal" },
+    { id: 2, top: "18%", left: "51%", color: "#ffaa00", type: "Elevated" },
+    { id: 3, top: "22%", left: "65%", color: "#ff3333", type: "High Alert" },
+    { id: 4, top: "43%", left: "32%", color: "#ff3333", type: "High Alert" },
+    { id: 5, top: "49%", left: "38%", color: "#ff3333", type: "High Alert" },
+    { id: 6, top: "29%", left: "82%", color: "#ff3333", type: "High Alert" },
+    { id: 7, top: "52%", left: "81%", color: "#ffaa00", type: "Elevated" },
+  ];
 
   return (
-    <div style={{ padding: "20px", backgroundColor: "#000", color: "#fff", fontFamily: "monospace", minHeight: "100vh" }}>
-      <h2 style={{ color: "#ffaa00" }}>🚨 ระบบวิเคราะห์เครือข่าย Assets (Image Debugger)</h2>
-      
-      <div style={{ border: "1px dashed #444", padding: "15px", marginBottom: "20px", backgroundColor: "#050505" }}>
-        <p><strong>[1] ตรวจสอบสิทธิ์และ Path ปลายทาง:</strong></p>
-        <p style={{ color: "#00ffcc" }}>URL ที่ระบบพยายามเรียก: <a href={`/${imageName}`} target="_blank" rel="noreferrer" style={{ color: "#00ffcc" }}>{resolvedPath}</a></p>
-        <p style={{ color: "#aaa" }}>💡 ลองคลิกลิงก์ด้านบน: ถ้าขึ้น 404 แสดงว่ารูปไม่ได้อยู่ในโฟลเดอร์ public หรือพิมพ์ชื่อตัวเล็ก/ตัวใหญ่ไม่ตรงกันบน Vercel</p>
+    <div 
+      style={{ 
+        position: "relative", 
+        width: "100%", 
+        height: "100%", 
+        minHeight: "500px",
+        backgroundColor: "#080c10",
+        // ดึงรูปภาพจาก /public มาทำเป็นพื้นหลังระบบเธียเตอร์แบบอัตโนมัติ
+        backgroundImage: "url('/Gemini_Generated_Image_nvm58snvm58snvm5.png')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        border: "2px solid #1a2530",
+        borderRadius: "6px",
+        overflow: "hidden",
+        boxShadow: "inset 0 0 30px rgba(0,0,0,0.8)"
+      }}
+    >
+      {/* เส้นกริดดิจิทัลครอบทับจอบางๆ เพื่อความสมจริงของระบบ Monitor */}
+      <div 
+        style={{
+          position: "absolute",
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundImage: "linear-gradient(rgba(18, 24, 32, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(18, 24, 32, 0.1) 1px, transparent 1px)",
+          backgroundSize: "20px 20px",
+          pointerEvents: "none",
+          zIndex: 1
+        }}
+      />
+
+      {/* แผงข้อมูลด่วนมุมซ้ายบนของจอภาพ (SITUATION ROOM OVERLAY) */}
+      <div 
+        style={{ 
+          position: "absolute", 
+          top: "12px", 
+          left: "12px", 
+          backgroundColor: "rgba(6, 10, 15, 0.85)", 
+          border: "1px solid #ff3333",
+          padding: "6px 12px", 
+          borderRadius: "4px",
+          fontSize: "11px",
+          fontFamily: "monospace",
+          color: "#fff",
+          zIndex: 10,
+          letterSpacing: "1px",
+          boxShadow: "0 4px 10px rgba(0,0,0,0.5)"
+        }}
+      >
+        <span style={{ color: "#ff3333", marginRight: "6px" }}>●</span> 
+        RED ALERT : DEFCON 1 ACTIVE
       </div>
 
-      <div style={{ border: "1px dashed #444", padding: "15px", backgroundColor: "#050505" }}>
-        <p><strong>[2] ตรวจจับพฤติกรรมแท็ก &lt;img&gt; เรียลไทม์:</strong></p>
-        <p>สถานะปัจจุบัน: <span style={{ color: imgStatus.includes("สำเร็จ") ? "#00ff00" : "#ff3333", fontWeight: "bold" }}>{imgStatus}</span></p>
-        
-        {/* แท็กดักจับ Event */}
-        <img 
-          src={`/${imageName}`}
-          alt="Test Stream"
-          style={{ width: "200px", height: "auto", border: "1px solid #333", marginTop: "10px", display: "block" }}
-          onLoad={() => {
-            setImgStatus("✅ เชื่อมต่อสำเร็จ! ระบบดึงภาพขึ้นจอควบคุมได้ปกติ");
-          }}
-          onError={(e) => {
-            setImgStatus("❌ ล้มเหลว (404 Not Found / ถูกบล็อกสิทธิ์)! เบราว์เซอร์ไม่สามารถเข้าถึงไฟล์ภาพที่ระบุได้");
-          }}
-        />
+      {/* ระบบเรนเดอร์พิกัดดวงไฟกะพริบ (Tactical Nodes Layer) */}
+      <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", zIndex: 5 }}>
+        {signalNodes.map((node) => (
+          <div
+            key={node.id}
+            style={{
+              position: "absolute",
+              top: node.top,
+              left: node.left,
+              transform: "translate(-50%, -50%)",
+            }}
+          >
+            {/* เอฟเฟกต์วงแหวนคลื่นวิทยุกระจายตัว (Pulse Ring) */}
+            <div 
+              style={{
+                position: "absolute",
+                top: "-10px", left: "-10px",
+                width: "32px", height: "32px",
+                borderRadius: "50%",
+                border: `2px solid ${node.color}`,
+                animation: "tacticalPulse 2s infinite ease-out",
+                opacity: 0
+              }}
+            />
+            {/* แกนดวงไฟหลักตรงกลาง */}
+            <div 
+              style={{
+                width: "12px",
+                height: "12px",
+                borderRadius: "50%",
+                backgroundColor: node.color,
+                boxShadow: `0 0 15px ${node.color}, 0 0 5px #fff`,
+                cursor: "pointer"
+              }}
+              title={`Node ${node.id} : ${node.type}`}
+            />
+          </div>
+        ))}
       </div>
 
-      <div style={{ marginTop: "20px", color: "#666", fontSize: "12px" }}>
-        *วิธีแก้ด่วน: ย้ายไฟล์ภาพไปไว้ที่คอมพิวเตอร์ในโฟลเดอร์ <code>โปรเจกต์/public/Gemini_Generated_Image_nvm58snvm58snvm5.png</code> แล้วกด Push ขึ้น Vercel ใหม่อีกครั้งครับ
+      {/* CSS Animation สำหรับบังคับให้ดวงไฟกะพริบคล้ายจอเรดาร์ทหาร */}
+      <style tag="tactical-radar-style">{`
+        @keyframes tacticalPulse {
+          0% { transform: scale(0.2); opacity: 0.8; }
+          100% { transform: scale(1.5); opacity: 0; }
+        }
+      `}</style>
+
+      {/* แถบรายงานสิทธิ์สัดส่วนแผนที่ด้านล่าง */}
+      <div 
+        style={{
+          position: "absolute",
+          bottom: "8px",
+          right: "12px",
+          fontSize: "10px",
+          color: "rgba(255,255,255,0.4)",
+          fontFamily: "monospace",
+          zIndex: 10,
+          backgroundColor: "rgba(0,0,0,0.5)",
+          padding: "2px 6px",
+          borderRadius: "3px"
+        }}
+      >
+        PROTOMAPS 8-BIT ENGAGEMENT THEATER v2.8.0
       </div>
     </div>
   );
