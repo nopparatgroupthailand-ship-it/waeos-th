@@ -216,8 +216,6 @@ export default function WorldMapCompleteTheater() {
 /* 🎨 HIGH-TECH COMMAND CENTER STYLES */
 const styles: { [key: string]: React.CSSProperties } = {
   dashboardContainer: { backgroundColor: "#000000", color: "#ffffff", fontFamily: "monospace", width: "100%", minHeight: "100vh", display: "flex", flexDirection: "column", overflowX: "hidden" },
-  
-  // แถบเมนูด้านบนสุด (Top Navigation Bar)
   topHeader: { height: "45px", backgroundColor: "#0a0f1d", borderBottom: "1px solid #1e293b", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 12px", zIndex: 110 },
   leftNavZone: { display: "flex", gap: "4px" },
   tabButton: { padding: "6px 12px", fontSize: "11px", color: "#94a3b8", cursor: "pointer", border: "1px solid transparent", borderRadius: "3px" },
@@ -236,8 +234,6 @@ const styles: { [key: string]: React.CSSProperties } = {
   linkButton: { backgroundColor: "#0369a1", color: "#fff", border: "1px solid #0284c7", padding: "4px 10px", fontSize: "11px", borderRadius: "3px", cursor: "pointer", fontWeight: "bold" },
   signInBtn: { backgroundColor: "#00ff66", color: "#000", border: "none", padding: "4px 10px", fontSize: "11px", fontWeight: "bold", borderRadius: "3px", cursor: "pointer" },
   createAccountBtn: { backgroundColor: "transparent", color: "#94a3b8", border: "1px solid #334155", padding: "4px 10px", fontSize: "11px", borderRadius: "3px", cursor: "pointer" },
-
-  // แถบ HUD บรรทัดที่ 2 (Sub-HUD Operational Bar)
   subHudBar: { height: "35px", backgroundColor: "#020617", borderBottom: "1px solid #0f172a", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 15px" },
   subHudLeft: { fontSize: "11px", color: "#ff3333", fontWeight: "bold" },
   subHudCenter: { fontSize: "11px", color: "#94a3b8", letterSpacing: "0.5px" },
@@ -245,19 +241,13 @@ const styles: { [key: string]: React.CSSProperties } = {
   toggleViewBtn: { backgroundColor: "#0f172a", color: "#94a3b8", border: "1px solid #1e293b", padding: "2px 8px", fontSize: "10px", cursor: "pointer" },
   toggleViewBtnActive: { backgroundColor: "#00ff66", color: "#000", border: "1px solid #00ff66", padding: "2px 8px", fontSize: "10px", fontWeight: "bold", cursor: "pointer" },
   bitMapBadge: { backgroundColor: "#0284c7", color: "#fff", border: "none", padding: "3px 10px", fontSize: "10px", fontWeight: "bold", borderRadius: "3px", marginLeft: "6px" },
-
-  // โครงสร้างเลย์เอาท์หลัก (Main Partition Workspace)
   mainWorkspaceLayout: { flex: 1, display: "flex", overflow: "hidden" },
-  
-  // 1. แผงควบคุมเลเยอร์ฝั่งซ้าย (Left Sidebar)
   leftSidebar: { width: "240px", backgroundColor: "#040814", borderRight: "1px solid #0f172a", display: "flex", flexDirection: "column", padding: "12px", position: "relative" },
   sidebarSectionTitle: { fontSize: "11px", fontWeight: "bold", color: "#64748b", letterSpacing: "1px", marginBottom: "8px", display: "flex", justifyContent: "space-between" },
   layerSearchInput: { backgroundColor: "#0f172a", border: "1px solid #1e293b", padding: "6px", fontSize: "11px", color: "#fff", borderRadius: "4px", marginBottom: "12px", outline: "none" },
   layerListItem: { display: "flex", alignItems: "center", gap: "8px", fontSize: "11px", color: "#cbd5e1", padding: "6px 4px", borderBottom: "1px solid #0f172a", cursor: "pointer" },
   userProfileStick: { position: "absolute", bottom: "10px", left: "10px", right: "10px", backgroundColor: "#090f1d", border: "1px solid #1e293b", padding: "8px", borderRadius: "4px", display: "flex", alignItems: "center", gap: "10px" },
   avatarCircle: { width: "28px", height: "28px", backgroundColor: "#3b82f6", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold" },
-
-  // 2. แผงมอนิเตอร์แผนที่ตรงกลาง (Center Theater Component)
   centerTheater: { flex: 1, backgroundColor: "#000", display: "flex", flexDirection: "column", padding: "8px" },
   mapWrapper: { position: "relative", width: "100%", flex: 1, overflow: "hidden", border: "1px solid #1e293b", borderRadius: "4px" },
   mapBackgroundImg: { width: "100%", height: "100%", objectFit: "cover" },
@@ -265,6 +255,21 @@ const styles: { [key: string]: React.CSSProperties } = {
   nightLightsContainer: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", mixBlendMode: "screen", opacity: 0.88, zIndex: 12 },
   gridOverlayLayer: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px)", backgroundSize: "24px 24px", pointerEvents: "none", zIndex: 15 },
   dragPanelNotice: { height: "28px", border: "1px dashed #334155", color: "#475569", fontSize: "10px", display: "flex", alignItems: "center", justifyContent: "center", marginTop: "6px", borderRadius: "3px" },
-
-  // จุดพิกัดเป้าหมายและ Tooltip
-  radarTargetPoint: { position: "absolute", width: "14px", height: "14px", transform: "
+  radarTargetPoint: { position: "absolute", width: "14px", height: "14px", transform: "translate(-50%, -50%)", zIndex: 25 },
+  radarCoreDot: { width: "4px", height: "4px", borderRadius: "50%", position: "absolute", top: "5px", left: "5px" },
+  radarPulseRing: { width: "14px", height: "14px", border: "1px solid", borderRadius: "50%", position: "absolute", top: 0, left: 0, animation: "radarGlow 2.2s infinite linear" },
+  mapTooltip: { position: "absolute", bottom: "20px", left: "50%", transform: "translateX(-50%)", backgroundColor: "rgba(5,9,20,0.95)", border: "1px solid #1e293b", padding: "5px 8px", borderRadius: "3px", fontSize: "9px", whiteSpace: "nowrap", pointerEvents: "none", boxShadow: "0 4px 8px rgba(0,0,0,0.5)" },
+  rightBloombergSidebar: { width: "320px", backgroundColor: "#040814", borderLeft: "1px solid #0f172a", display: "flex", flexDirection: "column", padding: "12px" },
+  newsSourceTabs: { display: "flex", gap: "2px", backgroundColor: "#0f172a", padding: "2px", borderRadius: "3px", marginBottom: "10px" },
+  newsTab: { flex: 1, textAlign: "center", fontSize: "9px", color: "#64748b", padding: "4px 0", cursor: "pointer" },
+  newsTabActive: { flex: 1, textAlign: "center", fontSize: "9px", color: "#fff", backgroundColor: "#ff3333", fontWeight: "bold", padding: "4px 0", borderRadius: "2px" },
+  videoStreamContainer: { flex: 1, backgroundColor: "#000", border: "1px solid #1e293b", borderRadius: "4px", position: "relative", overflow: "hidden" },
+  videoPlaceholder: { width: "100%", height: "100%", background: "linear-gradient(45deg, #020617 0%, #0b1528 100%)", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "15px", position: "relative" },
+  videoHeaderOverlay: { position: "absolute", top: "10px", left: "10px", fontSize: "9px", color: "#64748b" },
+  videoMainTitleText: { fontSize: "16px", fontWeight: "bold", color: "#ffffff", border: "2px solid #ffffff", padding: "10px 20px", letterSpacing: "1px" },
+  videoFooterStatusBar: { position: "absolute", bottom: "10px", left: "10px", fontSize: "8px", color: "#00ff66", fontWeight: "bold" },
+  bottomAnalyticsFooter: { height: "70px", backgroundColor: "#020617", borderTop: "1px solid #1e293b", display: "flex", gap: "1px" },
+  analyticsCard: { flex: 1, backgroundColor: "#050b18", padding: "8px 12px", display: "flex", flexDirection: "column", gap: "4px" },
+  cardHeader: { fontSize: "9px", fontWeight: "bold", color: "#475569", letterSpacing: "0.5px" },
+  cardBody: { fontSize: "11px", color: "#cbd5e1", lineHeight: "1.3" }
+};
