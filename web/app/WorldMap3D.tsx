@@ -56,7 +56,7 @@ export default function WorldMapComponent() {
       height: "100vh",
       fontFamily: "'Sarabun', sans-serif",
       display: "flex",
-      flexDirection: column",
+      flexDirection: "column",
       overflow: "hidden"
     }}>
       
@@ -91,7 +91,7 @@ export default function WorldMapComponent() {
         </div>
       </div>
 
-      {/* 2. MAIN HUB LAYOUT (จัดหน้าจอเต็มตาแบบชั้นเลเยอร์ซ้อนกัน ไม่แบ่งล็อกตายตัว) */}
+      {/* 2. MAIN HUB LAYOUT */}
       <div style={{ display: "flex", flex: 1, position: "relative", overflow: "hidden" }}>
         
         {/* เลเยอร์ฝั่งซ้าย: แผงควบคุมเปิด-ปิดชั้นข้อมูลยุทธวิธี (Layers Controller) */}
@@ -101,7 +101,7 @@ export default function WorldMapComponent() {
           borderRight: "1px solid #1e293b",
           padding: "16px",
           display: "flex",
-          flexDirection: column",
+          flexDirection: "column",
           gap: "12px",
           zIndex: 5
         }}>
@@ -113,7 +113,7 @@ export default function WorldMapComponent() {
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{ background: "#111827", border: "1px solid #334155", padding: "6px 10px", borderRadius: "4px", color: "#fff", fontSize: "12px" }}
           />
-          <div style={{ display: "flex", flexDirection: column", gap: "10px", fontSize: "13px", marginTop: "8px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "13px", marginTop: "8px" }}>
             <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}><input type="checkbox" defaultChecked /> 🔴 THAI PROCUREMENT HOTSPOTS</label>
             <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}><input type="checkbox" defaultChecked /> 🟢 TESLA ENERGY GRID</label>
             <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}><input type="checkbox" defaultChecked /> 🔵 CONFLICT ZONES MANAGEMENT</label>
@@ -128,7 +128,7 @@ export default function WorldMapComponent() {
           <div style={{
             width: "100%",
             height: "100%",
-            backgroundImage: "url('/map_day.png.png')", // เรียกใช้ไฟล์แผนที่ในโฟลเดอร์ public
+            backgroundImage: "url('/map_day.png.png')",
             backgroundSize: "cover",
             backgroundPosition: "center",
             position: "absolute",
@@ -141,7 +141,7 @@ export default function WorldMapComponent() {
               position: "absolute",
               top: 0,
               right: 0,
-              width: "45%", // จำลองขอบเขตพื้นที่โซนเวลากลางคืนที่ทอดผ่านแผนที่โลก
+              width: "45%",
               height: "100%",
               background: "linear-gradient(90deg, rgba(5,7,12,0) 0%, rgba(5,7,12,0.75) 20%, rgba(5,7,12,0.85) 100%)",
               mixBlendMode: "multiply",
@@ -169,7 +169,7 @@ export default function WorldMapComponent() {
           }}>
             
             {/* แผงข้อความข่าวสารสถานการณ์สด (Live Updates) */}
-            <div style={{ backgroundColor: "rgba(13, 19, 31, 0.9)", border: "1px solid #1e293b", borderRadius: "6px", padding: "12px", display: "flex", flexDirection: column" }}>
+            <div style={{ backgroundColor: "rgba(13, 19, 31, 0.9)", border: "1px solid #1e293b", borderRadius: "6px", padding: "12px", display: "flex", flexDirection: "column" }}>
               <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #334155", paddingBottom: "6px", marginBottom: "8px" }}>
                 <span style={{ fontSize: "12px", fontWeight: "bold", color: "#ef4444" }}>🔴 LIVE INTELLIGENCE FEED</span>
                 <span style={{ fontSize: "11px", color: "#64748b" }}>IN-MEMORY STORAGE STATUS</span>
@@ -182,13 +182,13 @@ export default function WorldMapComponent() {
             </div>
 
             {/* แผงหน้าต่างสนทนา Local RAG Assistant */}
-            <div style={{ backgroundColor: "rgba(11, 16, 26, 0.95)", border: "1px solid #1e293b", borderRadius: "6px", padding: "12px", display: "flex", flexDirection: column" }}>
+            <div style={{ backgroundColor: "rgba(11, 16, 26, 0.95)", border: "1px solid #1e293b", borderRadius: "6px", padding: "12px", display: "flex", flexDirection: "column" }}>
               <div style={{ borderBottom: "1px solid #334155", paddingBottom: "6px", marginBottom: "8px", fontSize: "12px", fontWeight: "bold", color: "#38bdf8" }}>
                 LOCAL TERNARY COMMAND LINE
               </div>
               
               {/* รายการข้อความแชต */}
-              <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: column", gap: "8px", paddingBottom: "8px" }}>
+              <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "8px", paddingBottom: "8px" }}>
                 {chatHistory.map((msg) => (
                   <div key={msg.id} style={{
                     fontSize: "12.5px",
