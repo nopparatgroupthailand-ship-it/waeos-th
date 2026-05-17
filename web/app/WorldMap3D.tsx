@@ -16,8 +16,12 @@ export default function WorldMapComponent() {
   const [chatInput, setChatInput] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(true);
   const [aiStatus, setAiStatus] = useState("⚡ INITIALIZING TERNARY ENGINE...");
-  const [nightPosition, setNightPosition] = useState("45%"); // ตำแหน่งเงาขยับตามเวลาโลก
+  const [nightPosition, setNightPosition] = useState("45%");
   
+  // 🛠️ ระบบแดชบอร์ดลากขยับขนาดจอซ้าย-ขวา (เริ่มต้นที่ 70%)
+  const [leftWidth, setLeftWidth] = useState(70); 
+  const isResizing = useRef(false);
+
   const procurementDatabase = useRef<ProcurementDoc[]>([]);
   const generator = useRef<any>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -26,12 +30,12 @@ export default function WorldMapComponent() {
     {
       id: 1,
       sender: "ai",
-      text: "[SYSTEM ONLINE] บูตระบบฐานข้อมูลแผนที่ยุทธวิธีเสร็จสมบูรณ์ แยกพื้นที่แถบเวลากลางวัน-กลางคืน (Dynamic Timezone Overlay)",
+      text: "[SYSTEM ONLINE] บูตระบบจัดการแผนที่ยุทธวิธีเสร็จสมบูรณ์ ระบบตรวจจับแถบเงาแสงอาทิตย์ขยับอัตโนมัติทำงาน",
     },
     {
       id: 2,
       sender: "ai",
-      text: "[⚠️ CORE] กำลังเชื่อมต่อระบบโครงข่ายประสาทเทียมรันตรงผ่านเว็บบราวเซอร์ (Local Inference)...",
+      text: "[⚠️ CORE] กำลังเชื่อมโยงโครงข่ายประสาทเทียมตรงผ่านเว็บบราวเซอร์ (Local WebGPU Inference)...",
     }
   ]);
 
@@ -39,7 +43,31 @@ export default function WorldMapComponent() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatHistory]);
 
-  // 1. ระบบติดตั้งและดึงสมอง AI
+  // ฟังก์ชันเริ่มต้นคำนวณการลากหน้าจอขยับซ้ายขวา
+  const startResizing = (e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizing.current = true;
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", stopResizing);
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isResizing.current) return;
+    // คำนวณร้อยละความกว้างหน้าจอตามตำแหน่งเมาส์จริง
+    const newWidth = (e.clientX / window.innerWidth) * 100;
+    // ล็อกระยะขั้นต่ำไม่ให้จอบีบเล็กเกินไปจนพัง (ขั้นต่ำ 40% สูงสุด 85%)
+    if (newWidth > 40 && newWidth < 85) {
+      setLeftWidth(newWidth);
+    }
+  };
+
+  const stopResizing = () => {
+    isResizing.current = false;
+    document.removeEventListener("mousemove", handleMouseMove);
+    document.removeEventListener("mouseup", stopResizing);
+  };
+
+  // 1. ระบบติดตั้งดึงสมอง AI
   useEffect(() => {
     const initLocalLLM = async () => {
       try {
@@ -69,11 +97,11 @@ export default function WorldMapComponent() {
         setChatHistory(prev => [...prev, {
           id: Date.now(),
           sender: "ai",
-          text: "✅ [LOCAL BRAIN ONLINE] โหลดสมองกฎหมายจัดซื้อจัดจ้าง พรบ. ระเบียบพัสดุ และหนังสือเวียนสำเร็จแล้ว! ข้อมูลปลอดภัยอยู่บนเครื่องผู้ใช้ 100% ไม่รั่วไหลออกอินเทอร์เน็ต พิมพ์ถามคำถามกฎหมายพัสดุได้เลยครับพี่สิริวิชญ์"
+          text: "✅ [LOCAL BRAIN ONLINE] โหลดสมอง AI เรียบร้อยแล้ว! ข้อมูลทำงานออฟไลน์ในเครื่องปลอดภัย 100% พิมพ์ถามคำถามเงื่อนไขกฎหมายพัสดุได้เลยครับพี่สิริวิชญ์"
         }]);
 
       } catch (err) {
-        console.log("WebGPU fallback to WASM execution loop...", err);
+        console.log("WebGPU fallback to WASM...", err);
         setAiStatus("🟡 LOCAL AI ACTIVE (WASM MODE)");
         setIsAiLoading(false);
       }
@@ -82,32 +110,25 @@ export default function WorldMapComponent() {
     initLocalLLM();
   }, []);
 
-  // 2. ระบบเวลาเรียลไทม์ และ ระบบคำนวณเงาตาม Timezone จริง
+  // 2. ระบบเวลาเรียลไทม์และคำนวณเงาแสงอาทิตย์
   useEffect(() => {
     const timer = setInterval(() => {
       const now = new Date();
-      
-      // เวลา UTC
       const hrs = String(now.getUTCHours()).padStart(2, '0');
       const mins = String(now.getUTCMinutes()).padStart(2, '0');
       const secs = String(now.getUTCSeconds()).padStart(2, '0');
       const ms = String(Math.floor(Math.random() * 900) + 100);
       setTime(`${hrs}:${mins}:${secs} ${ms}`);
-
-      // เวลาไทย (Local)
       setLocalTime(now.toLocaleTimeString("th-TH"));
 
-      // 🗺️ สูตรคำนวณขยับเงาตามเวลาจริง (24 ชั่วโมงวิ่งรอบโลกขยับซ้ายขวา)
       const currentUtcHour = now.getUTCHours() + (now.getUTCMinutes() / 60);
-      // แปลงเวลาให้สัมพันธ์กับแกน X แผนที่ (เวลาเที่ยงคืน UTC เงาจะอยู่ตรงกลางหรือฝั่งขวา)
       const shiftPercent = ((currentUtcHour + 6) % 24) / 24 * 100;
       setNightPosition(`${shiftPercent}%`);
-
     }, 100);
     return () => clearInterval(timer);
   }, []);
 
-  // 3. ฟังก์ชันประมวลผล RAG ถาม-ตอบ (ปรับปรุงตัวสกัดข้อความคำตอบใหม่)
+  // 3. ฟังก์ชันประมวลผลสกัดคำตอบตรงจุด
   const handleSendMessage = async () => {
     if (!chatInput.trim() || isAiLoading) return;
 
@@ -125,40 +146,38 @@ export default function WorldMapComponent() {
 
       if (generator.current) {
         const contextString = matchedDocs.length > 0 
-          ? matchedDocs.map(d => `[อ้างอิง: ${d.source} ${d.section}] เนื้อหา: ${d.content}`).join("\n")
-          : "ไม่มีอ้างอิงระเบียบโดยตรงในระบบ";
+          ? matchedDocs.map(d => `[ระเบียบอ้างอิง: ${d.source} ${d.section}] เนื้อหา: ${d.content}`).join("\n")
+          : "ไม่พบระเบียบพัสดุที่เกี่ยวข้องโดยตรงในระบบข้อมูลคลัง RAM";
 
-        const systemPrompt = `<|im_start|>system\nคุณคือระบบผู้ช่วยกฎหมายจัดซื้อจัดจ้างภาครัฐของไทย ตอบให้ตรงประเด็นและสั้นกระชับ\nบริบทอ้างอิง:\n${contextString}<|im_end|>\n<|im_start|>user\n${currentInput}<|im_end|>\n<|im_start|>assistant\n`;
+        const systemPrompt = `บริบทกฎหมาย:\n${contextString}\n\nคำถามจากเจ้าหน้าที่: ${currentInput}\nคำตอบสั้นๆ:`;
 
         const output = await generator.current(systemPrompt, {
-          max_new_tokens: 250,
-          temperature: 0.2,
+          max_new_tokens: 150,
+          temperature: 0.1,
           do_sample: false
         });
 
         const fullResponse = output[0].generated_text;
         
-        // 🛠️ ตรวจจับตัวตัดคำตอบอัจฉริยะ ป้องกันข้อความว่างเปล่า
-        if (fullResponse.includes("<|im_start|>assistant\n")) {
-          aiTextOutput = fullResponse.split("<|im_start|>assistant\n")[1]?.replace("<|im_end|>", "").trim();
-        } else if (fullResponse.includes("assistant\n")) {
-          aiTextOutput = fullResponse.split("assistant\n")[1]?.trim();
+        if (fullResponse.includes("คำตอบสั้นๆ:")) {
+          aiTextOutput = fullResponse.split("คำตอบสั้นๆ:")[1]?.trim();
         } else {
           aiTextOutput = fullResponse.replace(systemPrompt, "").trim();
         }
 
-        // กันเหนียวถ้าหลุดตัวแปรว่าง ให้ดึงประโยคหลักมาแสดงเลย
-        if (!aiTextOutput) {
-          aiTextOutput = "จากฐานข้อมูลพัสดุใน RAM: " + (matchedDocs[0]?.content || "กรุณาลองระบุคำหลักให้ชัดเจนขึ้น เช่น 'มาตรา 4' หรือ 'ค่าปรับ'");
+        if (!aiTextOutput || aiTextOutput.length < 2) {
+          aiTextOutput = matchedDocs.length > 0 
+            ? `พบข้อความอ้างอิงตรงกับคำค้นหาของพี่ดังนี้ครับ:\n${matchedDocs[0].content}`
+            : "สแกนแล้วไม่พบมาตราที่ตรงกับคำหลักที่ส่งมา ลองปรับใช้คำว่า 'มาตรา 4' หรือ 'อัตราค่าปรับ' ดูครับพี่";
         }
 
       } else {
-        aiTextOutput = "[LOCAL CONSOLE] ตรวจพบคำค้นหาเกี่ยวกับระเบียบจัดซื้อจัดจ้าง กำลังเรียกค้นคลังข้อมูลในหน่วยความจำชั่วคราว...";
+        aiTextOutput = "[LOCAL CONSOLE] ตรวจพบคำค้นหาพัสดุ ดึงประโยคอ้างอิงจาก RAM สำเร็จ";
       }
 
       setChatHistory(prev => [...prev, { id: Date.now() + 1, sender: "ai", text: `[🔥 RAG INSIGHT] ${aiTextOutput}` }]);
     } catch (error) {
-      setChatHistory(prev => [...prev, { id: Date.now() + 1, sender: "ai", text: "❌ ข้อผิดพลาด: ไม่สามารถรันประมวลผลน้ำหนัก AI ในเครื่องได้" }]);
+      setChatHistory(prev => [...prev, { id: Date.now() + 1, sender: "ai", text: "❌ ข้อผิดพลาด: แกนประมวลผลในเครื่องหยุดทำงานชั่วคราว" }]);
     }
   };
 
@@ -181,7 +200,8 @@ export default function WorldMapComponent() {
         padding: "8px 16px",
         backgroundColor: "#0d131f",
         borderBottom: "1px solid #1e293b",
-        height: "55px"
+        height: "55px",
+        userSelect: "none"
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <span style={{ fontWeight: "bold", letterSpacing: "1px", color: "#38bdf8", fontSize: "16px" }}>
@@ -206,10 +226,10 @@ export default function WorldMapComponent() {
       </div>
 
       {/* ================= 2. MAIN SPLIT HUB WORKSPACE ================= */}
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+      <div style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative" }}>
         
-        {/* 🗺️ ฝั่งซ้าย (70%): แผนที่โลกยุทธวิธี และ แผงควบคุมเลเยอร์ด้านใน */}
-        <div style={{ width: "70%", display: "flex", position: "relative", borderRight: "1px solid #1e293b", height: "100%" }}>
+        {/* 🗺️ ฝั่งซ้าย: แผนที่ยุทธวิธี (คำนวณความกว้างแบบก้าวหน้าตามค่า leftWidth) */}
+        <div style={{ width: `${leftWidth}%`, display: "flex", position: "relative", height: "100%", overflow: "hidden" }}>
           
           <div style={{
             width: "240px",
@@ -219,7 +239,8 @@ export default function WorldMapComponent() {
             display: "flex",
             flexDirection: "column",
             gap: "12px",
-            zIndex: 5
+            zIndex: 5,
+            userSelect: "none"
           }}>
             <h4 style={{ fontSize: "11px", color: "#94a3b8", letterSpacing: "0.5px", margin: 0 }}>GLOBAL SITUATION LAYERS</h4>
             <input 
@@ -243,7 +264,6 @@ export default function WorldMapComponent() {
             </div>
           </div>
 
-          {/* กล่องแสดงแผนที่โลก */}
           <div style={{ flex: 1, position: "relative", background: "#05070c" }}>
             <div style={{
               width: "100%",
@@ -255,20 +275,18 @@ export default function WorldMapComponent() {
               top: 0,
               left: 0
             }}>
-              {/* ชั้นหน้ากากมืด/สว่างแบบ Dynamic ขยับตามเวลาจริงอัตโนมัติ */}
               <div style={{
                 position: "absolute",
                 top: 0,
-                left: nightPosition, // ใช้ตำแหน่งที่คำนวณจากเวลา UTC จริง ขยับเงาไม่ให้บังไทยตอนสว่าง
+                left: nightPosition,
                 width: "45%",
                 height: "100%",
                 background: "linear-gradient(90deg, rgba(5,7,12,0) 0%, rgba(5,7,12,0.8) 30%, rgba(5,7,12,0.85) 100%)",
                 mixBlendMode: "multiply",
                 pointerEvents: "none",
-                transition: "left 0.5s ease" // ขยับเนียนๆ
+                transition: "left 0.5s ease"
               }} />
 
-              {/* จุดพิกัดเรดาร์แจ้งเตือน */}
               <div className="radar-ping" style={{ position: "absolute", left: "73%", top: "42%", width: "12px", height: "12px", background: "#ef4444", borderRadius: "50%", boxShadow: "0 0 10px #ef4444" }} title="Phrae Hub" />
               <div className="radar-ping" style={{ position: "absolute", left: "52%", top: "28%", width: "10px", height: "10px", background: "#38bdf8", borderRadius: "50%", boxShadow: "0 0 10px #38bdf8" }} title="Moscow Server" />
               <div className="radar-ping" style={{ position: "absolute", left: "25%", top: "35%", width: "10px", height: "10px", background: "#eab308", borderRadius: "50%", boxShadow: "0 0 10px #eab308" }} title="US Gateway" />
@@ -277,37 +295,59 @@ export default function WorldMapComponent() {
 
         </div>
 
-        {/* 🤖 ฝั่งขวา (30%): ศูนย์ควบคุมและแชตโต้ตอบยาวเต็มจอ */}
+        {/* 🎛️ แถบกระจกแนวตั้ง (ขยับแกนกลาง): ใช้เมาส์คลิกค้างแล้วลากเลื่อนปรับขนาดซ้ายขวาได้อิสระ */}
+        <div 
+          onMouseDown={startResizing}
+          style={{
+            width: "6px",
+            background: "#1e293b",
+            cursor: "col-resize",
+            position: "relative",
+            zIndex: 10,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            transition: "background 0.2s"
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "#38bdf8")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "#1e293b")}
+        >
+          {/* ขีดสัญลักษณ์ตรงกลางปุ่มลาก */}
+          <div style={{ width: "2px", height: "20px", background: "#64748b", borderRadius: "1px" }} />
+        </div>
+
+        {/* 🤖 ฝั่งขวา: แผงควบคุมและกล่องแชต (ความกว้างจะลด-ขยายสวนทางตามแถบลากอัตโนมัติ) */}
         <div style={{ 
-          width: "30%", 
+          width: `${100 - leftWidth}%`, 
           backgroundColor: "#0b101a", 
           display: "flex", 
           flexDirection: "column", 
           height: "100%",
-          padding: "12px"
+          padding: "12px",
+          overflow: "hidden"
         }}>
           
           <div style={{ 
-            height: "150px", 
+            height: "140px", 
             backgroundColor: "rgba(13, 19, 31, 0.92)", 
             border: "1px solid #1e293b", 
             borderRadius: "6px", 
             padding: "12px", 
             display: "flex", 
             flexDirection: "column",
-            marginBottom: "12px"
+            marginBottom: "12px",
+            userSelect: "none"
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #334155", paddingBottom: "6px", marginBottom: "6px" }}>
               <span style={{ fontSize: "11px", fontWeight: "bold", color: "#ef4444" }}>🔴 LIVE INTELLIGENCE FEED</span>
             </div>
             <div style={{ flex: 1, overflowY: "auto", fontSize: "11.5px", color: "#94a3b8", lineHeight: "1.5" }}>
-              <p style={{ margin: "2px 0" }}>• [ระบบพัสดุ] ดึงข้อมูลคลัง พรบ. ระเบียบพัสดุ 2560 เข้าสู่ RAM เรียบร้อย</p>
-              <p style={{ margin: "2px 0", color: "#38bdf8" }}>• [ระบบปลอดภัย] สถาปัตยกรรมทำงานแบบออฟไลน์แยกตัว 100%</p>
-              <p style={{ margin: "2px 0" }}>• [Local Engine] เรียกใช้คำสั่งแกนประมวลผล WebGPU สำเร็จ</p>
+              <p style={{ margin: "2px 0" }}>• [ระบบพัสดุ] จับคู่ฐานข้อมูลออฟไลน์ใน RAM เสร็จสิ้น</p>
+              <p style={{ margin: "2px 0", color: "#38bdf8" }}>• [การทำงาน] แยกโมเดลรันแบบปิดปลอดภัย 100%</p>
+              <p style={{ margin: "2px 0" }}>• [Hardware] เชื่อมแกนประมวลผล WebGPU ของเครื่องผู้ใช้</p>
             </div>
           </div>
 
-          {/* ส่วนหน้าต่างแชต */}
           <div style={{ 
             flex: 1, 
             backgroundColor: "rgba(11, 16, 26, 0.96)", 
@@ -318,7 +358,7 @@ export default function WorldMapComponent() {
             flexDirection: "column",
             overflow: "hidden"
           }}>
-            <div style={{ borderBottom: "1px solid #334155", paddingBottom: "6px", marginBottom: "8px", fontSize: "12px", fontWeight: "bold", color: "#38bdf8" }}>
+            <div style={{ borderBottom: "1px solid #334155", paddingBottom: "6px", marginBottom: "8px", fontSize: "12px", fontWeight: "bold", color: "#38bdf8", userSelect: "none" }}>
               LOCAL TERNARY COMMAND LINE
             </div>
             
@@ -357,7 +397,7 @@ export default function WorldMapComponent() {
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
                 disabled={isAiLoading}
-                placeholder={isAiLoading ? "กรุณารอระบบสักครู่..." : "พิมพ์ถามเงื่อนไขกฎหมายพัสดุตรงนี้ได้เลย..."} 
+                placeholder={isAiLoading ? "กรุณารอระบบติดตั้งแกนสมอง..." : "พิมพ์ค้นหาเงื่อนไขกฎหมายพัสดุตรงนี้ได้เลย..."} 
                 style={{ 
                   flex: 1, 
                   background: "#070a0f", 
