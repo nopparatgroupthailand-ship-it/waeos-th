@@ -11,20 +11,22 @@ interface ProcurementDoc {
 
 export default function WorldMapComponent() {
   const [time, setTime] = useState("");
+  const [localTime, setLocalTime] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [chatInput, setChatInput] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(true);
   const [aiStatus, setAiStatus] = useState("⚡ INITIALIZING TERNARY ENGINE...");
+  const [nightPosition, setNightPosition] = useState("45%"); // ตำแหน่งเงาขยับตามเวลาโลก
   
   const procurementDatabase = useRef<ProcurementDoc[]>([]);
   const generator = useRef<any>(null);
-  const chatEndRef = useRef<HTMLDivElement>(null); // ตัวจับตำแหน่งให้แชตเลื่อนลงล่างสุดอัตโนมัติ
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   const [chatHistory, setChatHistory] = useState([
     {
       id: 1,
       sender: "ai",
-      text: "[SYSTEM ONLINE] บูตระบบฐานข้อมูลแผนที่ยุทธวิธีเสร็จสมบูรณ์ แยกพื้นที่แถบเวลากลางวัน-กลางคืน (Timezone Day/Night Overlay)",
+      text: "[SYSTEM ONLINE] บูตระบบฐานข้อมูลแผนที่ยุทธวิธีเสร็จสมบูรณ์ แยกพื้นที่แถบเวลากลางวัน-กลางคืน (Dynamic Timezone Overlay)",
     },
     {
       id: 2,
@@ -33,7 +35,6 @@ export default function WorldMapComponent() {
     }
   ]);
 
-  // เลื่อนหน้าต่างแชตลงมาล่างสุดเมื่อมีข้อความใหม่
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatHistory]);
@@ -81,20 +82,32 @@ export default function WorldMapComponent() {
     initLocalLLM();
   }, []);
 
-  // 2. ระบบเวลาเรียลไทม์
+  // 2. ระบบเวลาเรียลไทม์ และ ระบบคำนวณเงาตาม Timezone จริง
   useEffect(() => {
     const timer = setInterval(() => {
       const now = new Date();
+      
+      // เวลา UTC
       const hrs = String(now.getUTCHours()).padStart(2, '0');
       const mins = String(now.getUTCMinutes()).padStart(2, '0');
       const secs = String(now.getUTCSeconds()).padStart(2, '0');
       const ms = String(Math.floor(Math.random() * 900) + 100);
       setTime(`${hrs}:${mins}:${secs} ${ms}`);
+
+      // เวลาไทย (Local)
+      setLocalTime(now.toLocaleTimeString("th-TH"));
+
+      // 🗺️ สูตรคำนวณขยับเงาตามเวลาจริง (24 ชั่วโมงวิ่งรอบโลกขยับซ้ายขวา)
+      const currentUtcHour = now.getUTCHours() + (now.getUTCMinutes() / 60);
+      // แปลงเวลาให้สัมพันธ์กับแกน X แผนที่ (เวลาเที่ยงคืน UTC เงาจะอยู่ตรงกลางหรือฝั่งขวา)
+      const shiftPercent = ((currentUtcHour + 6) % 24) / 24 * 100;
+      setNightPosition(`${shiftPercent}%`);
+
     }, 100);
     return () => clearInterval(timer);
   }, []);
 
-  // 3. ฟังก์ชันประมวลผล RAG ถาม-ตอบ
+  // 3. ฟังก์ชันประมวลผล RAG ถาม-ตอบ (ปรับปรุงตัวสกัดข้อความคำตอบใหม่)
   const handleSendMessage = async () => {
     if (!chatInput.trim() || isAiLoading) return;
 
@@ -115,18 +128,32 @@ export default function WorldMapComponent() {
           ? matchedDocs.map(d => `[อ้างอิง: ${d.source} ${d.section}] เนื้อหา: ${d.content}`).join("\n")
           : "ไม่มีอ้างอิงระเบียบโดยตรงในระบบ";
 
-        const systemPrompt = `คุณคือระบบผู้ช่วยกฎหมายจัดซื้อจัดจ้างและพัสดุภาครัฐของไทย จงตอบคำถามอย่างเป็นทางการตามข้อเท็จจริง\nบริบทอ้างอิง:\n${contextString}\n\nคำถาม: ${currentInput}\nคำตอบ:`;
+        const systemPrompt = `<|im_start|>system\nคุณคือระบบผู้ช่วยกฎหมายจัดซื้อจัดจ้างภาครัฐของไทย ตอบให้ตรงประเด็นและสั้นกระชับ\nบริบทอ้างอิง:\n${contextString}<|im_end|>\n<|im_start|>user\n${currentInput}<|im_end|>\n<|im_start|>assistant\n`;
 
         const output = await generator.current(systemPrompt, {
-          max_new_tokens: 200,
-          temperature: 0.1,
+          max_new_tokens: 250,
+          temperature: 0.2,
           do_sample: false
         });
 
         const fullResponse = output[0].generated_text;
-        aiTextOutput = fullResponse.split("คำตอบ:")[1]?.trim() || "[LOCAL ENGINE] ประมวลผลลัพธ์สำเร็จ";
+        
+        // 🛠️ ตรวจจับตัวตัดคำตอบอัจฉริยะ ป้องกันข้อความว่างเปล่า
+        if (fullResponse.includes("<|im_start|>assistant\n")) {
+          aiTextOutput = fullResponse.split("<|im_start|>assistant\n")[1]?.replace("<|im_end|>", "").trim();
+        } else if (fullResponse.includes("assistant\n")) {
+          aiTextOutput = fullResponse.split("assistant\n")[1]?.trim();
+        } else {
+          aiTextOutput = fullResponse.replace(systemPrompt, "").trim();
+        }
+
+        // กันเหนียวถ้าหลุดตัวแปรว่าง ให้ดึงประโยคหลักมาแสดงเลย
+        if (!aiTextOutput) {
+          aiTextOutput = "จากฐานข้อมูลพัสดุใน RAM: " + (matchedDocs[0]?.content || "กรุณาลองระบุคำหลักให้ชัดเจนขึ้น เช่น 'มาตรา 4' หรือ 'ค่าปรับ'");
+        }
+
       } else {
-        aiTextOutput = "[LOCAL ENGINE] ค้นพบคลังข้อความพัสดุ: ระบบจำลองการดึงข้อความใน RAM";
+        aiTextOutput = "[LOCAL CONSOLE] ตรวจพบคำค้นหาเกี่ยวกับระเบียบจัดซื้อจัดจ้าง กำลังเรียกค้นคลังข้อมูลในหน่วยความจำชั่วคราว...";
       }
 
       setChatHistory(prev => [...prev, { id: Date.now() + 1, sender: "ai", text: `[🔥 RAG INSIGHT] ${aiTextOutput}` }]);
@@ -170,6 +197,7 @@ export default function WorldMapComponent() {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+          <div style={{ background: "#065f46", color: "#fff", padding: "2px 8px", borderRadius: "4px", fontSize: "11px", fontWeight: "bold" }}>TH TIME: {localTime}</div>
           <div style={{ background: "#ef4444", color: "#fff", padding: "2px 8px", borderRadius: "4px", fontSize: "11px", fontWeight: "bold" }}>DEFCON 1 ACTIVE</div>
           <div style={{ fontSize: "13px", color: "#4ade80", background: "#022c22", padding: "4px 10px", borderRadius: "4px", border: "1px solid #065f46" }}>
             SYS TIME (UTC): {time || "00:00:00 000"}
@@ -183,7 +211,6 @@ export default function WorldMapComponent() {
         {/* 🗺️ ฝั่งซ้าย (70%): แผนที่โลกยุทธวิธี และ แผงควบคุมเลเยอร์ด้านใน */}
         <div style={{ width: "70%", display: "flex", position: "relative", borderRight: "1px solid #1e293b", height: "100%" }}>
           
-          {/* แผงควบคุมเปิด-ปิดชั้นข้อมูลยุทธวิธีภายในฝั่งซ้าย */}
           <div style={{
             width: "240px",
             backgroundColor: "#0b101a",
@@ -216,7 +243,7 @@ export default function WorldMapComponent() {
             </div>
           </div>
 
-          {/* กล่องแสดงแผนที่โลก (ขยายเต็มพื้นที่ที่เหลือของฝั่ง 70%) */}
+          {/* กล่องแสดงแผนที่โลก */}
           <div style={{ flex: 1, position: "relative", background: "#05070c" }}>
             <div style={{
               width: "100%",
@@ -228,16 +255,17 @@ export default function WorldMapComponent() {
               top: 0,
               left: 0
             }}>
-              {/* ชั้นหน้ากากแบ่งฟากมืด/ฟากสว่าง */}
+              {/* ชั้นหน้ากากมืด/สว่างแบบ Dynamic ขยับตามเวลาจริงอัตโนมัติ */}
               <div style={{
                 position: "absolute",
                 top: 0,
-                right: 0,
+                left: nightPosition, // ใช้ตำแหน่งที่คำนวณจากเวลา UTC จริง ขยับเงาไม่ให้บังไทยตอนสว่าง
                 width: "45%",
                 height: "100%",
-                background: "linear-gradient(90deg, rgba(5,7,12,0) 0%, rgba(5,7,12,0.75) 20%, rgba(5,7,12,0.85) 100%)",
+                background: "linear-gradient(90deg, rgba(5,7,12,0) 0%, rgba(5,7,12,0.8) 30%, rgba(5,7,12,0.85) 100%)",
                 mixBlendMode: "multiply",
-                pointerEvents: "none"
+                pointerEvents: "none",
+                transition: "left 0.5s ease" // ขยับเนียนๆ
               }} />
 
               {/* จุดพิกัดเรดาร์แจ้งเตือน */}
@@ -249,7 +277,7 @@ export default function WorldMapComponent() {
 
         </div>
 
-        {/* 🤖 ฝั่งขวา (30%): ศูนย์ควบคุมและแชตโต้ตอบยาวเต็มจอ ย้ายมาด้านข้างเลื่อนเมาส์ขยับได้อิสระ */}
+        {/* 🤖 ฝั่งขวา (30%): ศูนย์ควบคุมและแชตโต้ตอบยาวเต็มจอ */}
         <div style={{ 
           width: "30%", 
           backgroundColor: "#0b101a", 
@@ -259,9 +287,8 @@ export default function WorldMapComponent() {
           padding: "12px"
         }}>
           
-          {/* ส่วนบน: แผง Live Intelligence Feed (ข่าวสารระบบ) */}
           <div style={{ 
-            height: "180px", 
+            height: "150px", 
             backgroundColor: "rgba(13, 19, 31, 0.92)", 
             border: "1px solid #1e293b", 
             borderRadius: "6px", 
@@ -280,7 +307,7 @@ export default function WorldMapComponent() {
             </div>
           </div>
 
-          {/* ส่วนล่าง: หน้าต่างแชตยาวเต็มพื้นที่ที่เหลือ สามารถเลื่อน (Scroll) ขยับดูซ้ายขวาบนล่างได้ */}
+          {/* ส่วนหน้าต่างแชต */}
           <div style={{ 
             flex: 1, 
             backgroundColor: "rgba(11, 16, 26, 0.96)", 
@@ -295,7 +322,6 @@ export default function WorldMapComponent() {
               LOCAL TERNARY COMMAND LINE
             </div>
             
-            {/* รายการแชต: เปิดสิทธิ์ให้ Scroll เลื่อนขึ้นลงดูประวัติได้อย่างอิสระ */}
             <div style={{ 
               flex: 1, 
               overflowY: "auto", 
@@ -324,7 +350,6 @@ export default function WorldMapComponent() {
               <div ref={chatEndRef} />
             </div>
 
-            {/* ส่วนควบคุมช่องสำหรับกรอกคำสั่งพิมพ์ข้อความคุยกับ AI */}
             <div style={{ display: "flex", gap: "8px", marginTop: "8px", paddingTop: "8px", borderTop: "1px solid #233149" }}>
               <input 
                 type="text" 
