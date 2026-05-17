@@ -2,123 +2,496 @@
 
 import React, { useState, useEffect } from "react";
 
-// พิกัดจุดแสดงผลความเสี่ยง (Global Conflict & Intel Hotspots) แบบเดียวกับต้นฉบับ
+// พิกัดจุดแสดงผลความเสี่ยง (Global Conflict & Intel Hotspots) ดึงข้อมูลตามบริบทระบบตรวจสอบภายใน
 const monitorPins = [
-  { id: 1, name: "Thailand Node (Phrae HQ)", lat: 18.1446, lng: 100.1403, status: "high", details: "INTERNAL AUDIT SYSTEM ONLINE // MONITORING ACTIVE" },
-  { id: 2, name: "Iran Theater (Critical Zone)", lat: 32.4279, lng: 53.6880, status: "high", details: "DEFCON 1 // Intel Hotspot Detected" },
-  { id: 3, name: "South China Sea Node", lat: 10.0000, lng: 114.0000, status: "medium", details: "Conflict Zone // Naval Base Tracking" },
-  { id: 4, name: "North America Sync", lat: 38.9072, lng: -77.0369, status: "low", details: "Vercel Deployment Node Connection Stable" },
-  { id: 5, name: "Europe Operations", lat: 48.8566, lng: 2.3522, status: "medium", details: "Radiation Watch // Supply Chain Risk Analysis" },
-  { id: 6, name: "Beijing Intelligence Node", lat: 39.9042, lng: 116.4074, status: "high", details: "High Alert // Strategic Posture Active" }
+  { id: 1, name: "Thailand Node (Phrae HQ)", lat: 18.1446, lng: 100.1403, status: "high", details: "INTERNAL AUDIT REPORT: Processing LINE Chatbot workflow summaries." },
+  { id: 2, name: "Iran Theater (Critical Zone)", lat: 32.4279, lng: 53.6880, status: "high", details: "DEFCON 1: Tactical deployment and cybersecurity monitoring active." },
+  { id: 3, name: "South China Sea Node", lat: 10.0000, lng: 114.0000, status: "medium", details: "Conflict Zone: Supply chain and maritime logistics route analysis." },
+  { id: 4, name: "North America Sync", lat: 38.9072, lng: -77.0369, status: "low", details: "Vercel Deployment Node: Build automation logs successfully optimized." },
+  { id: 5, name: "Europe Operations", lat: 48.8566, lng: 2.3522, status: "medium", details: "Radiation Watch // LegalTech integration framework checks." },
+  { id: 6, name: "Beijing Intelligence Node", lat: 39.9042, lng: 116.4074, status: "high", details: "High Alert: Automated procurement anomaly detection system testing." }
 ];
 
 export default function WorldMonitor2D() {
   const [currentTime, setCurrentTime] = useState<string>("");
   const [hoveredPin, setHoveredPin] = useState<any>(null);
+  const [newsFeed, setNewsFeed] = useState<string>(
+    "SOVIET INVADERS DETECTED IN NORTH ATLANTIC THEATER ... CHRONOSPHERE SIGNATURE ACTIVATED IN PACIFIC SECTOR ... YURI'S MIND CONTROL TOWERS DETECTED ... SYSTEM ONLINE ..."
+  );
+  const [inputUrl, setInputUrl] = useState<string>("");
+  const [dataChannels, setDataChannels] = useState<string[]>([
+    "https://www.gprocurement.go.th/new_index.html",
+    "https://www.cgd.go.th",
+    "https://phrae.go.th"
+  ]);
 
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-      setCurrentTime(now.toISOString().replace('T', ' ').substring(0, 19) + " UTC");
+      setCurrentTime(now.toUTCString().replace("GMT", "UTC"));
     };
     updateTime();
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // แปลงพิกัดภูมิศาสตร์ (Lat, Lng) ให้ลงจุดบนแผนที่ 2D แบบสากล (Equirectangular Projection)
+  // ฟังก์ชันแปลงพิกัด Lat/Lng เป็น % บนแผนที่แบนราบ (Equirectangular projection)
   const convertCoords = (lat: number, lng: number) => {
     const x = ((lng + 180) / 360) * 100;
     const y = ((90 - lat) / 180) * 100;
-    return { x, y };
+    return { left: `${x}%`, top: `${y}%` };
+  };
+
+  const handleAddChannel = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (inputUrl.trim()) {
+      setDataChannels([...dataChannels, inputUrl.trim()]);
+      setInputUrl("");
+    }
   };
 
   return (
-    <div className="w-full h-full min-h-[600px] flex flex-col bg-[#0b0f17] text-[#e2e8f0] font-mono relative overflow-hidden p-3 select-none border border-[#1e293b]">
-      
-      {/* ส่วนหัวแสดงสถานะระบบสไตล์ WorldMonitor */}
-      <div className="flex items-center justify-between border-b border-[#1e2e4a] pb-2 mb-3">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5 bg-[#1c1917] px-2 py-0.5 border border-[#ef4444] rounded">
-            <span className="w-2 h-2 rounded-full bg-[#ef4444] animate-pulse" />
-            <span className="text-[11px] text-[#f87171] font-bold tracking-wider">DEFCON 1 100%</span>
-          </div>
-          <div className="text-xs font-bold tracking-widest text-[#38bdf8]">
-            GLOBAL SITUATION MONITOR <span className="text-slate-500 text-[10px]">v2.8.0</span>
-          </div>
+    <div style={styles.dashboardContainer}>
+      {/* 1. TOP HEADER (STATUS BAR เหมือนเว็บต้นฉบับ) */}
+      <header style={styles.header}>
+        <div style={styles.brandZone}>
+          <div style={styles.pulseDot}></div>
+          <span style={styles.brandTitle}>WORLD MONITOR <span style={styles.editionText}>v2.8.0</span></span>
         </div>
-        <div className="text-right">
-          <span className="text-[11px] text-[#38bdf8] font-bold">{currentTime || "CONNECTING..."}</span>
+        <div style={styles.centralStatus}>
+          <span style={styles.defconBox}>DEFCON 1</span>
+          <span style={styles.statusIndicator}>● LIVE FEED</span>
+          <span style={styles.systemStatus}>SITUATION ROOM</span>
         </div>
-      </div>
+        <div style={styles.timeZone}>
+          <span style={styles.timeLabel}>SYSTEM TIME (UTC)</span>
+          <span style={styles.timeText}>{currentTime || "00:00:00 UTC"}</span>
+        </div>
+      </header>
 
-      {/* พื้นที่แผนที่ 2 มิติเต็มจอ */}
-      <div className="flex-1 w-full bg-[#05070c] rounded relative overflow-hidden border border-[#111827]">
+      {/* 2. MAIN MAP THEATER (พื้นที่แผนที่โลก 8-Bit เต็มความกว้างแบบต้นฉบับ ไม่มีแบ่ง 70/30) */}
+      <section style={styles.mapTheater}>
+        <div style={styles.mapContainer}>
+          {/* ใช้ภาพแผนที่โลกแบบ 8-bit Pixel Art เป็นพื้นหลังเต็มพื้นที่ */}
+          <img 
+            src="http://googleusercontent.com/image_collection/image_retrieval/11644614980546840199" 
+            alt="8-Bit Red Alert World Map" 
+            style={styles.mapImage}
+          />
+          
+          {/* Overlay เส้น Grid ตารางพิกัดยุทธวิธี */}
+          <div style={styles.mapGridOverlay}></div>
+
+          {/* ปักหมุดพิกัดเสี่ยงภัยภัยพิบัติ/ข้อมูลตรวจสอบ */}
+          {monitorPins.map((pin) => {
+            const { left, top } = convertCoords(pin.lat, pin.lng);
+            return (
+              <div
+                key={pin.id}
+                style={{ ...styles.pinMarker, left, top }}
+                onMouseEnter={() => setHoveredPin(pin)}
+                onMouseLeave={() => setHoveredPin(null)}
+              >
+                <div style={{
+                  ...styles.pinRadar,
+                  backgroundColor: pin.status === "high" ? "#ef4444" : pin.status === "medium" ? "#facc15" : "#06b6d4",
+                  boxShadow: `0 0 12px ${pin.status === "high" ? "#ef4444" : pin.status === "medium" ? "#facc15" : "#06b6d4"}`
+                }} />
+                
+                {/* Tooltip แสดงข้อมูลด่วนเมื่อ Hover */}
+                {hoveredPin?.id === pin.id && (
+                  <div style={styles.tooltip}>
+                    <div style={styles.tooltipHeader}>{pin.name}</div>
+                    <div style={styles.tooltipBody}>{pin.details}</div>
+                    <div style={styles.tooltipCoords}>LAT: {pin.lat.toFixed(4)} / LNG: {pin.lng.toFixed(4)}</div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* แถบวิ่งแจ้งสถานการณ์สด (News Ticker) ชิดขอบล่างของพื้นที่แผนที่ */}
+        <div style={styles.tickerBar}>
+          <div style={styles.tickerLabel}>LIVE NEWS FEED</div>
+          <div style={styles.tickerTrack}>
+            <div style={styles.tickerText}>{newsFeed}</div>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. BOTTOM INFRASTRUCTURE GRID (แบ่งแผงข้อมูลด้านล่างให้สัดส่วนสมดุลตามเว็บ WorldMonitor) */}
+      <section style={styles.bottomGrid}>
         
-        {/* เส้นตาราง Grid พื้นหลัง (Latitude/Longitude Lines) */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#162235_1px,transparent_1px),linear-gradient(to_bottom,#162235_1px,transparent_1px)] bg-[size:3%_5%] opacity-40 z-0" />
-
-        {/* 🗺️ วาดโครงร่างทวีป 2 มิติด้วยเวกเตอร์ความละเอียดสูงตรงกลางจอ */}
-        <svg className="absolute inset-0 w-full h-full opacity-25 z-0" viewBox="0 0 1000 500" preserveAspectRatio="none">
-          {/* อเมริกาเหนือและกรีนแลนด์ */}
-          <path d="M50,50 L200,40 L280,30 L350,50 L300,120 L250,150 L180,180 L100,160 L50,100 Z M350,15 L430,20 L400,60 L340,50 Z" fill="none" stroke="#475569" strokeWidth="1.5" />
-          {/* อเมริกาใต้ */}
-          <path d="M220,240 L260,250 L310,290 L330,340 L290,440 L250,480 L230,420 L210,320 Z" fill="none" stroke="#475569" strokeWidth="1.5" />
-          {/* แอฟริกา */}
-          <path d="M440,200 L490,180 L560,210 L610,260 L570,360 L510,420 L490,400 L460,300 L420,240 Z" fill="none" stroke="#475569" strokeWidth="1.5" />
-          {/* ยูเรเชีย (ยุโรป และ เอเชียทั้งหมด) */}
-          <path d="M420,150 L520,110 L620,80 L800,80 L920,120 L940,180 L900,240 L850,280 L800,320 L750,260 L680,240 L600,240 L520,250 L460,180 Z" fill="none" stroke="#475569" strokeWidth="1.5" />
-          {/* เน้นลายเส้นโครงร่างบริเวณ ประเทศไทย และภูมิภาคเอเชียตะวันออกเฉียงใต้ */}
-          <path d="M750,250 L775,252 L785,275 L770,305 L755,300 L745,270 Z" fill="#1e293b" opacity="0.6" stroke="#0ea5e9" strokeWidth="1.5" />
-          {/* ออสเตรเลีย */}
-          <path d="M800,360 L870,365 L900,420 L820,440 Z" fill="none" stroke="#475569" strokeWidth="1.5" />
-        </svg>
-
-        {/* จุดปักหมุดไฟเรืองแสงกระพริบ (Interactive Global Intel Pins) */}
-        {monitorPins.map((pin) => {
-          const { x, y } = convertCoords(pin.lat, pin.lng);
-          return (
-            <div
-              key={pin.id}
-              className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10"
-              style={{ left: `${x}%`, top: `${y}%` }}
-              onMouseEnter={() => setHoveredPin(pin)}
-              onMouseLeave={() => setHoveredPin(null)}
-            >
-              {/* วงแหวนเรดาร์สะท้อนรอบจุด */}
-              <span className={`absolute inline-flex h-5 w-5 rounded-full opacity-75 animate-ping -left-1.5 -top-1.5 ${
-                pin.status === "high" ? "bg-[#ef4444]" : pin.status === "medium" ? "bg-[#f59e0b]" : "bg-[#0ea5e9]"
-              }`} />
-              {/* เม็ดไฟศูนย์กลาง */}
-              <div className={`h-2 w-2 rounded-full border border-black shadow-md ${
-                pin.status === "high" ? "bg-[#ef4444]" : pin.status === "medium" ? "bg-[#f59e0b]" : "bg-[#0ea5e9]"
-              }`} />
-            </div>
-          );
-        })}
-
-        {/* กล่องแสดงข้อมูลเมื่อเลื่อนเมาส์ไปชี้ที่จุดปักหมุด */}
-        {hoveredPin && (
-          <div className="absolute bottom-3 left-3 bg-[#0f172a]/95 border border-[#38bdf8]/50 p-3 rounded shadow-xl z-20 max-w-sm font-mono backdrop-blur-sm">
-            <div className="text-[10px] text-[#38bdf8] font-bold mb-1">INTEL NODE // SECURITY ACCESS</div>
-            <div className="text-xs font-bold text-white mb-0.5">{hoveredPin.name}</div>
-            <div className="text-[11px] text-slate-300 leading-normal">{hoveredPin.details}</div>
-            <div className="mt-1.5 text-[9px] text-slate-500">
-              COORDS: {hoveredPin.lat.toFixed(4)}N, {hoveredPin.lng.toFixed(4)}E
+        {/* แผงควบคุมเพิ่มและตรวจสอบช่องข้อมูล (Multi-panel Input) */}
+        <div style={styles.panelCard}>
+          <div style={styles.panelHeader}>
+            <span><span style={styles.accentText}>📌</span> แผงควบคุมและช่องข้อมูล (Multi-panel)</span>
+          </div>
+          <div style={styles.panelBody}>
+            <form onSubmit={handleAddChannel} style={styles.inputGroup}>
+              <input
+                type="text"
+                placeholder="วาง URL ข่าว หรือ API ไทย เช่น https://data.go.th"
+                value={inputUrl}
+                onChange={(e) => setInputUrl(e.target.value)}
+                style={styles.textInput}
+              />
+              <button type="submit" style={styles.submitBtn}>เพิ่มช่อง</button>
+            </form>
+            
+            <div style={styles.channelList}>
+              {dataChannels.map((url, idx) => (
+                <div key={idx} style={styles.channelItem}>
+                  <span style={styles.channelIndex}>CH {idx + 1}:</span>
+                  <span style={styles.channelUrl}>{url}</span>
+                  <span style={styles.channelStatus}>[ONLINE]</span>
+                </div>
+              ))}
             </div>
           </div>
-        )}
-
-        {/* คำอธิบายสัญลักษณ์ (Legend) ที่มุมจอด้านล่าง */}
-        <div className="absolute bottom-2 right-2 bg-[#0b0f17]/90 border border-[#1e293b] rounded px-2 py-1 flex items-center gap-3 text-[10px] font-mono z-10">
-          <div className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#ef4444]" /> High Alert</div>
-          <div className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#f59e0b]" /> Elevated</div>
-          <div className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#0ea5e9]" /> Normal Node</div>
-          <span className="text-[#475569]">|</span>
-          <span className="text-slate-400">PROTOMAPS 2D LIVE</span>
         </div>
-      </div>
 
+        {/* แผงข้อมูลสถานะระบบ AI & การวิเคราะห์เชิงยุทธวิธี */}
+        <div style={styles.panelCard}>
+          <div style={styles.panelHeader}>
+            <span><span style={styles.accentText}>⚡</span> AI STRATEGIC POSTURE & INTERNAL AUDIT</span>
+          </div>
+          <div style={styles.panelBody}>
+            <div style={styles.metricRow}>
+              <div style={styles.metricBox}>
+                <div style={styles.metricVal}>DEFCON 1</div>
+                <div style={styles.metricSub}>RISK THREAT LEVEL</div>
+              </div>
+              <div style={styles.metricBox}>
+                <div style={styles.metricVal} style={{ color: "#facc15" }}>74%</div>
+                <div style={styles.metricSub}>PROCUREMENT STABILITY</div>
+              </div>
+              <div style={styles.metricBox}>
+                <div style={styles.metricVal} style={{ color: "#a855f7" }}>READY</div>
+                <div style={styles.metricSub}>LINE LLM FLOWCHART</div>
+              </div>
+            </div>
+            <p style={styles.panelParagraph}>
+              ระบบวิเคราะห์ข้อมูลอัตโนมัติพร้อมสแกนรายงานการตรวจสอบภายใน โครงสร้างเว็บบอร์ดถูกปรับสัดส่วนตามสถาปัตยกรรม World-theater ไม่มีการใช้สัดส่วนหน้าต่างแยก 70:30 เพื่อการตรวจทานข้อมูลที่สมบูรณ์สูงสุดในระนาบเดียว
+            </p>
+          </div>
+        </div>
+
+      </section>
     </div>
   );
 }
+
+/* สไตล์สไตล์ชีทแบบ CSS-in-JS เพื่อการันตีสัดส่วนตามบรีฟ ห้าม 70/30 */
+const styles: { [key: string]: React.CSSProperties } = {
+  dashboardContainer: {
+    backgroundColor: "#060606",
+    color: "#00ff41",
+    fontFamily: "'Orbitron', 'Courier New', sans-serif",
+    width: "100vw",
+    minHeight: "100vh",
+    display: "flex",
+    flexDirection: "column",
+    overflowX: "hidden"
+  },
+  header: {
+    backgroundColor: "#0c0c0c",
+    borderBottom: "2px solid #222",
+    height: "60px",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "0 20px",
+    zIndex: 10
+  },
+  brandZone: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px"
+  },
+  pulseDot: {
+    width: "8px",
+    height: "8px",
+    backgroundColor: "#ef4444",
+    borderRadius: "50%",
+    boxShadow: "0 0 8px #ef4444"
+  },
+  brandTitle: {
+    fontWeight: "bold",
+    fontSize: "16px",
+    letterSpacing: "1px",
+    color: "#ffffff"
+  },
+  editionText: {
+    color: "#ef4444",
+    fontSize: "11px",
+    fontFamily: "monospace"
+  },
+  centralStatus: {
+    display: "flex",
+    alignItems: "center",
+    gap: "20px"
+  },
+  defconBox: {
+    backgroundColor: "#ef4444",
+    color: "#fff",
+    padding: "3px 8px",
+    fontSize: "12px",
+    fontWeight: "bold",
+    borderRadius: "3px"
+  },
+  statusIndicator: {
+    color: "#00ff41",
+    fontSize: "13px",
+    fontWeight: "bold"
+  },
+  systemStatus: {
+    color: "#888",
+    fontSize: "13px",
+    letterSpacing: "1px"
+  },
+  timeZone: {
+    textAlign: "right"
+  },
+  timeLabel: {
+    display: "block",
+    fontSize: "9px",
+    color: "#666",
+    fontFamily: "monospace"
+  },
+  timeText: {
+    fontSize: "14px",
+    color: "#00ff41",
+    fontWeight: "bold",
+    fontFamily: "monospace"
+  },
+  mapTheater: {
+    position: "relative",
+    width: "100%",
+    height: "55vh", // ดึงเป็นแผ่นกระดานโลกยาวเต็มพื้นที่ขอบชนขอบ
+    backgroundColor: "#0d0f14",
+    borderBottom: "2px solid #222"
+  },
+  mapContainer: {
+    position: "relative",
+    width: "100%",
+    height: "calc(100% - 35px)",
+    overflow: "hidden"
+  },
+  mapImage: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    imageRendering: "pixelated",
+    opacity: 0.75
+  },
+  mapGridOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    backgroundImage: "linear-gradient(rgba(0, 255, 65, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 65, 0.05) 1px, transparent 1px)",
+    backgroundSize: "40px 40px",
+    pointerEvents: "none"
+  },
+  pinMarker: {
+    position: "absolute",
+    width: "16px",
+    height: "16px",
+    transform: "translate(-50%, -50%)",
+    cursor: "pointer",
+    zIndex: 5
+  },
+  pinRadar: {
+    width: "10px",
+    height: "10px",
+    borderRadius: "50%",
+    position: "absolute",
+    top: "3px",
+    left: "3px"
+  },
+  tooltip: {
+    position: "absolute",
+    bottom: "25px",
+    left: "50%",
+    transform: "translateX(-50%)",
+    backgroundColor: "rgba(10, 10, 10, 0.95)",
+    border: "1px solid #00ff41",
+    padding: "10px",
+    borderRadius: "4px",
+    width: "260px",
+    zIndex: 20,
+    boxShadow: "0 4px 20px rgba(0,0,0,0.8)"
+  },
+  tooltipHeader: {
+    color: "#fff",
+    fontSize: "12px",
+    fontWeight: "bold",
+    marginBottom: "5px",
+    borderBottom: "1px solid #333",
+    paddingBottom: "3px",
+    fontFamily: "monospace"
+  },
+  tooltipBody: {
+    color: "#aaa",
+    fontSize: "11px",
+    lineHeight: "1.4",
+    marginBottom: "5px"
+  },
+  tooltipCoords: {
+    color: "#00ff41",
+    fontSize: "9px",
+    fontFamily: "monospace"
+  },
+  tickerBar: {
+    height: "35px",
+    backgroundColor: "#050505",
+    borderTop: "1px solid #222",
+    display: "flex",
+    alignItems: "center",
+    overflow: "hidden"
+  },
+  tickerLabel: {
+    backgroundColor: "#ef4444",
+    color: "#fff",
+    padding: "0 12px",
+    fontSize: "11px",
+    fontWeight: "bold",
+    height: "100%",
+    display: "flex",
+    alignItems: "center",
+    flexShrink: 0,
+    fontFamily: "monospace"
+  },
+  tickerTrack: {
+    width: "100%",
+    overflow: "hidden"
+  },
+  tickerText: {
+    display: "inline-block",
+    whiteSpace: "nowrap",
+    paddingLeft: "100%",
+    animation: "tickerAnimation 25s linear infinite",
+    fontSize: "13px",
+    color: "#00ff41",
+    fontFamily: "monospace"
+  },
+  bottomGrid: {
+    flex: 1,
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr", // แบ่งครึ่งซ้ายขวาเท่ากัน 50:50 สมดุล สวยงามตามโมเดล Dashboard มาตรฐาน
+    gap: "20px",
+    padding: "20px",
+    backgroundColor: "#060606"
+  },
+  panelCard: {
+    backgroundColor: "#0d0d0d",
+    border: "1px solid #222",
+    borderRadius: "4px",
+    display: "flex",
+    flexDirection: "column"
+  },
+  panelHeader: {
+    backgroundColor: "#121212",
+    padding: "10px 15px",
+    borderBottom: "1px solid #222",
+    fontSize: "13px",
+    fontWeight: "bold",
+    color: "#ffffff"
+  },
+  accentText: {
+    marginRight: "5px"
+  },
+  panelBody: {
+    padding: "15px",
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    gap: "15px"
+  },
+  inputGroup: {
+    display: "flex",
+    gap: "10px"
+  },
+  textInput: {
+    flex: 1,
+    backgroundColor: "#000",
+    border: "1px solid #333",
+    borderRadius: "3px",
+    padding: "8px 12px",
+    color: "#00ff41",
+    fontSize: "13px",
+    fontFamily: "monospace"
+  },
+  submitBtn: {
+    backgroundColor: "#00ff41",
+    color: "#000",
+    border: "none",
+    borderRadius: "3px",
+    padding: "0 15px",
+    fontSize: "12px",
+    fontWeight: "bold",
+    cursor: "pointer"
+  },
+  channelList: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
+    overflowY: "auto",
+    maxHeight: "150px"
+  },
+  channelItem: {
+    display: "flex",
+    justifyContent: "space-between",
+    backgroundColor: "#000",
+    border: "1px solid #1a1a1a",
+    padding: "8px 12px",
+    borderRadius: "3px",
+    fontSize: "12px"
+  },
+  channelIndex: {
+    color: "#666",
+    fontWeight: "bold",
+    marginRight: "5px"
+  },
+  channelUrl: {
+    color: "#bbb",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    maxWidth: "70%"
+  },
+  channelStatus: {
+    color: "#00ff41",
+    fontFamily: "monospace"
+  },
+  metricRow: {
+    display: "flex",
+    gap: "15px"
+  },
+  metricBox: {
+    flex: 1,
+    backgroundColor: "#000",
+    border: "1px solid #222",
+    padding: "12px",
+    borderRadius: "3px",
+    textAlign: "center"
+  },
+  metricVal: {
+    fontSize: "18px",
+    fontWeight: "bold",
+    color: "#ef4444",
+    marginBottom: "4px"
+  },
+  metricSub: {
+    fontSize: "9px",
+    color: "#666"
+  },
+  panelParagraph: {
+    fontSize: "12px",
+    color: "#888",
+    lineHeight: "1.6"
+  }
+};
