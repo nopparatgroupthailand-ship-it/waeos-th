@@ -25,7 +25,7 @@ export default function WorldMonitor2D() {
     "https://phrae.go.th"
   ]);
   
-  // สถานะเก็บ URL เว็บที่กำลังเปิดดูในแผงควบคุม (Default ตัวแรกคือกรมบัญชีกลาง)
+  // กำหนดช่องสัญญาณแรกเริ่มต้น
   const [activeUrl, setActiveUrl] = useState<string>("https://www.gprocurement.go.th/new_index.html");
 
   useEffect(() => {
@@ -38,7 +38,6 @@ export default function WorldMonitor2D() {
     return () => clearInterval(interval);
   }, []);
 
-  // ฟังก์ชันแปลงพิกัด Lat/Lng เป็น % บนแผนที่
   const convertCoords = (lat: number, lng: number) => {
     const x = ((lng + 180) / 360) * 100;
     const y = ((90 - lat) / 180) * 100;
@@ -55,12 +54,11 @@ export default function WorldMonitor2D() {
     }
   };
 
-  // ตัวช่วยแปลง URL เว็บไซต์รัฐบาลที่ติดความปลอดภัย (X-Frame) ให้สามารถฝังเปิดดูได้จริง
+  // วิธีดึงหน้าเว็บที่ติดระบบความปลอดภัยขั้นสูง (X-Frame-Options) มาสตรีมสดบนหน้าจอแบบ World Monitor ตัวจริง
   const getEmbeddableUrl = (url: string) => {
-    if (url.includes("gprocurement.go.th") || url.includes("cgd.go.th") || url.includes("go.th")) {
-      return `https://images.weserv.nl/?url=${encodeURIComponent(url)}&output=jpg` ? `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}` : url;
-    }
-    return url;
+    if (!url) return "";
+    // ใช้บริการ Open Proxy เพื่อดึง HTML โครงสร้างหลักของเว็บเป้าหมายมาสตรีมทะลุกำแพงความปลอดภัย
+    return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
   };
 
   return (
@@ -82,19 +80,19 @@ export default function WorldMonitor2D() {
         </div>
       </header>
 
-      {/* 2. MAIN MAP THEATER (หน้าจอแผนที่โลก ไม่แบ่ง 70/30) */}
+      {/* 2. MAIN MAP THEATER (แผนที่โลกแบบไร้รอยต่อเต็มระนาบ ไม่แบ่งสัดส่วนดรอป 70/30) */}
       <section style={styles.mapTheater}>
         <div style={styles.mapContainer}>
-          {/* เปลี่ยนไปใช้ภาพแผนที่แนว Sci-fi Grid คุณภาพสูง ดึงรูปขึ้นแน่นอน */}
+          {/* อัปเดตลิงก์รูปภาพแผนที่โลกแนว Matrix Cyber Grid แท้ภาพคมชัด 100% */}
           <img 
-            src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1920&auto=format&fit=crop" 
-            alt="Cyber Grid World Map" 
+            src="https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1200&auto=format&fit=crop" 
+            alt="Cyber Map Grid" 
             style={styles.mapImage}
           />
           
           <div style={styles.mapGridOverlay}></div>
 
-          {/* ปักหมุดพิกัดเสี่ยงภัย */}
+          {/* ปักหมุดยุทธวิธี */}
           {monitorPins.map((pin) => {
             const { left, top } = convertCoords(pin.lat, pin.lng);
             return (
@@ -110,7 +108,6 @@ export default function WorldMonitor2D() {
                   boxShadow: `0 0 12px ${pin.status === "high" ? "#ef4444" : pin.status === "medium" ? "#facc15" : "#06b6d4"}`
                 }} />
                 
-                {/* Tooltip บอกรายละเอียดข้อมูล */}
                 {hoveredPin?.id === pin.id && (
                   <div style={styles.tooltip}>
                     <div style={styles.tooltipHeader}>{pin.name}</div>
@@ -123,7 +120,7 @@ export default function WorldMonitor2D() {
           })}
         </div>
 
-        {/* แถบข่าววิ่งด้านล่างแผนที่ */}
+        {/* แถบข้อมูลข่าวสารสไลด์วิ่ง */}
         <div style={styles.tickerBar}>
           <div style={styles.tickerLabel}>LIVE NEWS FEED</div>
           <div style={styles.tickerTrack}>
@@ -132,10 +129,396 @@ export default function WorldMonitor2D() {
         </div>
       </section>
 
-      {/* 3. BOTTOM INFRASTRUCTURE GRID (แบ่งพื้นที่แบบ 50:50 สมดุล) */}
+      {/* 3. BOTTOM INFRASTRUCTURE GRID */}
       <section style={styles.bottomGrid}>
         
-        {/* แผงควบคุมซ้าย: การจัดการช่องสัญญาณเว็บ/ข้อมูลตรวจสอบ */}
+        {/* แผงซ้าย: จัดการสถานีลิงก์เชื่อมต่อ */}
         <div style={styles.panelCard}>
           <div style={styles.panelHeader}>
-            <span><span style={styles.accentText}>📌
+            <span><span style={styles.accentText}>📌</span> แผงควบคุมช่องสัญญาณตรวจสอบ (Multi-panel)</span>
+          </div>
+          <div style={styles.panelBody}>
+            <form onSubmit={handleAddChannel} style={styles.inputGroup}>
+              <input
+                type="text"
+                placeholder="ใส่ URL เช่น phrae.go.th หรือเว็บข่าวตรวจสอบ"
+                value={inputUrl}
+                onChange={(e) => setInputUrl(e.target.value)}
+                style={styles.textInput}
+              />
+              <button type="submit" style={styles.submitBtn}>เพิ่มช่อง</button>
+            </form>
+            
+            <div style={styles.channelList}>
+              {dataChannels.map((url, idx) => (
+                <div 
+                  key={idx} 
+                  style={{ 
+                    ...styles.channelItem, 
+                    borderColor: activeUrl === url ? "#00ff41" : "#1a1a1a",
+                    backgroundColor: activeUrl === url ? "#051a05" : "#000"
+                  }}
+                  onClick={() => setActiveUrl(url)}
+                >
+                  <span style={styles.channelIndex}>CH {idx + 1}:</span>
+                  <span style={styles.channelUrl}>{url}</span>
+                  <span style={{ ...styles.channelStatus, color: activeUrl === url ? "#00ff41" : "#666" }}>
+                    {activeUrl === url ? "[MONITORING]" : "[ONLINE]"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* แผงขวา: ดึงข้อมูลหน้าเว็บมาสตรีมแบบ Sandbox */}
+        <div style={styles.panelCard}>
+          <div style={styles.panelHeader}>
+            <span><span style={styles.accentText}>⚡</span> LIVE STREAM: {activeUrl}</span>
+          </div>
+          <div style={styles.panelBody}>
+            <div style={styles.iframeWrapper}>
+              <iframe
+                src={getEmbeddableUrl(activeUrl)}
+                title="World Monitor Live Stream Frame"
+                style={styles.webPreviewFrame}
+                sandbox="allow-scripts allow-same-origin allow-popups"
+              />
+            </div>
+
+            <div style={styles.metricRow}>
+              <div style={styles.metricBox}>
+                <div style={styles.metricVal}>DEFCON 1</div>
+                <div style={styles.metricSub}>RISK THREAT LEVEL</div>
+              </div>
+              <div style={styles.metricBox}>
+                <div style={{ ...styles.metricVal, color: "#facc15" }}>74%</div>
+                <div style={styles.metricSub}>PROCUREMENT STABILITY</div>
+              </div>
+              <div style={styles.metricBox}>
+                <div style={{ ...styles.metricVal, color: "#a855f7" }}>READY</div>
+                <div style={styles.metricSub}>LINE LLM FLOWCHART</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+    </div>
+  );
+}
+
+/* ชุดรูปแบบเลย์เอาต์ยุทธวิธีควบคุมสัดส่วน */
+const styles: { [key: string]: React.CSSProperties } = {
+  dashboardContainer: {
+    backgroundColor: "#060606",
+    color: "#00ff41",
+    fontFamily: "'Orbitron', 'Courier New', sans-serif",
+    width: "100vw",
+    minHeight: "100vh",
+    display: "flex",
+    flexDirection: "column",
+    overflowX: "hidden"
+  },
+  header: {
+    backgroundColor: "#0c0c0c",
+    borderBottom: "2px solid #222",
+    height: "60px",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "0 20px",
+    zIndex: 10
+  },
+  brandZone: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px"
+  },
+  pulseDot: {
+    width: "8px",
+    height: "8px",
+    backgroundColor: "#ef4444",
+    borderRadius: "50%",
+    boxShadow: "0 0 8px #ef4444"
+  },
+  brandTitle: {
+    fontWeight: "bold",
+    fontSize: "16px",
+    letterSpacing: "1px",
+    color: "#ffffff"
+  },
+  editionText: {
+    color: "#ef4444",
+    fontSize: "11px",
+    fontFamily: "monospace"
+  },
+  centralStatus: {
+    display: "flex",
+    alignItems: "center",
+    gap: "20px"
+  },
+  defconBox: {
+    backgroundColor: "#ef4444",
+    color: "#fff",
+    padding: "3px 8px",
+    fontSize: "12px",
+    fontWeight: "bold",
+    borderRadius: "3px"
+  },
+  statusIndicator: {
+    color: "#00ff41",
+    fontSize: "13px",
+    fontWeight: "bold"
+  },
+  systemStatus: {
+    color: "#888",
+    fontSize: "13px",
+    letterSpacing: "1px"
+  },
+  timeZone: {
+    textAlign: "right"
+  },
+  timeLabel: {
+    display: "block",
+    fontSize: "9px",
+    color: "#666",
+    fontFamily: "monospace"
+  },
+  timeText: {
+    fontSize: "14px",
+    color: "#00ff41",
+    fontWeight: "bold",
+    fontFamily: "monospace"
+  },
+  mapTheater: {
+    position: "relative",
+    width: "100%",
+    height: "48vh",
+    backgroundColor: "#0d0f14",
+    borderBottom: "2px solid #222"
+  },
+  mapContainer: {
+    position: "relative",
+    width: "100%",
+    height: "calc(100% - 35px)",
+    overflow: "hidden"
+  },
+  mapImage: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    opacity: 0.35
+  },
+  mapGridOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    backgroundImage: "linear-gradient(rgba(0, 255, 65, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 65, 0.08) 1px, transparent 1px)",
+    backgroundSize: "30px 30px",
+    pointerEvents: "none"
+  },
+  pinMarker: {
+    position: "absolute",
+    width: "16px",
+    height: "16px",
+    transform: "translate(-50%, -50%)",
+    cursor: "pointer",
+    zIndex: 5
+  },
+  pinRadar: {
+    width: "12px",
+    height: "12px",
+    borderRadius: "50%",
+    position: "absolute",
+    top: "2px",
+    left: "2px"
+  },
+  tooltip: {
+    position: "absolute",
+    bottom: "25px",
+    left: "50%",
+    transform: "translateX(-50%)",
+    backgroundColor: "rgba(5, 5, 5, 0.95)",
+    border: "1px solid #00ff41",
+    padding: "10px",
+    borderRadius: "4px",
+    width: "250px",
+    zIndex: 20
+  },
+  tooltipHeader: {
+    color: "#fff",
+    fontSize: "12px",
+    fontWeight: "bold",
+    marginBottom: "5px",
+    borderBottom: "1px solid #222",
+    fontFamily: "monospace"
+  },
+  tooltipBody: {
+    color: "#00ff41",
+    fontSize: "11px",
+    lineHeight: "1.4"
+  },
+  tooltipCoords: {
+    color: "#888",
+    fontSize: "9px",
+    marginTop: "4px",
+    fontFamily: "monospace"
+  },
+  tickerBar: {
+    height: "35px",
+    backgroundColor: "#050505",
+    borderTop: "1px solid #222",
+    display: "flex",
+    alignItems: "center",
+    overflow: "hidden"
+  },
+  tickerLabel: {
+    backgroundColor: "#ef4444",
+    color: "#fff",
+    padding: "0 12px",
+    fontSize: "11px",
+    fontWeight: "bold",
+    height: "100%",
+    display: "flex",
+    alignItems: "center",
+    flexShrink: 0
+  },
+  tickerTrack: {
+    width: "100%",
+    overflow: "hidden"
+  },
+  tickerText: {
+    display: "inline-block",
+    whiteSpace: "nowrap",
+    paddingLeft: "100%",
+    fontSize: "13px",
+    color: "#00ff41",
+    fontFamily: "monospace"
+  },
+  bottomGrid: {
+    flex: 1,
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "20px",
+    padding: "20px",
+    backgroundColor: "#060606"
+  },
+  panelCard: {
+    backgroundColor: "#0d0d0d",
+    border: "1px solid #222",
+    borderRadius: "4px",
+    display: "flex",
+    flexDirection: "column",
+    height: "40vh"
+  },
+  panelHeader: {
+    backgroundColor: "#121212",
+    padding: "10px 15px",
+    borderBottom: "1px solid #222",
+    fontSize: "13px",
+    fontWeight: "bold",
+    color: "#ffffff"
+  },
+  accentText: {
+    marginRight: "5px"
+  },
+  panelBody: {
+    padding: "15px",
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
+    overflowY: "auto"
+  },
+  inputGroup: {
+    display: "flex",
+    gap: "10px"
+  },
+  textInput: {
+    flex: 1,
+    backgroundColor: "#000",
+    border: "1px solid #333",
+    borderRadius: "3px",
+    padding: "8px 12px",
+    color: "#00ff41",
+    fontSize: "13px"
+  },
+  submitBtn: {
+    backgroundColor: "#00ff41",
+    color: "#000",
+    border: "none",
+    borderRadius: "3px",
+    padding: "0 15px",
+    fontSize: "12px",
+    fontWeight: "bold",
+    cursor: "pointer"
+  },
+  channelList: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px"
+  },
+  channelItem: {
+    display: "flex",
+    justifyContent: "space-between",
+    backgroundColor: "#000",
+    border: "1px solid #1a1a1a",
+    padding: "10px 12px",
+    borderRadius: "3px",
+    fontSize: "12px",
+    cursor: "pointer"
+  },
+  channelIndex: {
+    color: "#666",
+    fontWeight: "bold"
+  },
+  channelUrl: {
+    color: "#bbb",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    maxWidth: "60%"
+  },
+  channelStatus: {
+    fontFamily: "monospace"
+  },
+  iframeWrapper: {
+    flex: 1,
+    backgroundColor: "#111",
+    border: "1px solid #222",
+    borderRadius: "3px",
+    overflow: "hidden",
+    minHeight: "160px"
+  },
+  webPreviewFrame: {
+    width: "100%",
+    height: "100%",
+    border: "none",
+    backgroundColor: "#ffffff"
+  },
+  metricRow: {
+    display: "flex",
+    gap: "10px",
+    marginTop: "5px"
+  },
+  metricBox: {
+    flex: 1,
+    backgroundColor: "#000",
+    border: "1px solid #222",
+    padding: "8px",
+    borderRadius: "3px",
+    textAlign: "center"
+  },
+  metricVal: {
+    fontSize: "16px",
+    fontWeight: "bold",
+    color: "#ef4444"
+  },
+  metricSub: {
+    fontSize: "8px",
+    color: "#666"
+  }
+};
