@@ -2,265 +2,241 @@
 
 import React, { useState, useEffect } from "react";
 
-const strategicNodes = [
-  { id: 1, lat: 18.1446, lng: 100.1403, color: "#00ff66", label: "PHRAE HQ (THAILAND)", status: "ACTIVE" },
-  { id: 2, lat: 55.7558, lng: 37.6173, color: "#ff3333", label: "MOSCOW OUTPOST", status: "CRITICAL" },
-  { id: 3, lat: 40.7128, lng: -74.0060, color: "#00f0ff", label: "NEW YORK NODE", status: "MONITORING" }
-];
+export default function WorldMapComponent() {
+  const [time, setTime] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [chatInput, setChatInput] = useState("");
+  const [chatHistory, setChatHistory] = useState([
+    {
+      id: 1,
+      sender: "ai",
+      text: "[SYSTEM ONLINE] บูตระบบฐานข้อมูลแผนที่ยุทธวิธีเสร็จสมบูรณ์ แยกพื้นที่แถบเวลากลางวัน-กลางคืน (Timezone Day/Night Overlay) พร้อมประมวลผล Local RAG กฎหมายพัสดุ",
+    },
+  ]);
 
-export default function TacticalMatrixDashboard() {
-  const [currentTimeStr, setCurrentTimeStr] = useState<string>("");
-  const [utcHour, setUtcHour] = useState<number>(12);
-  
-  // 🔘 สถานะการสลับหน้าจอ (8BIT / 2D / 3D) กลับมาทำงานเหมือนเดิม
-  const [mapMode, setMapMode] = useState<"8BIT" | "2D" | "3D">("8BIT");
-
-  // 🌐 ระบบ Dynamic URL Matrix (พี่สามารถเปลี่ยน URL ในช่องกรอกเพื่อดึงเว็บมาฉายสดได้)
-  const [mainMapUrl, setMainMapUrl] = useState<string>(""); // หากใส่ URL จะดึงเว็บมาทับแผนที่หลัก ทิ้งว่างไว้จะโชว์แผนที่ 8-Bit
-  const [urlSlot1, setUrlSlot1] = useState<string>("https://www.bloomberg.com");
-  const [urlSlot2, setUrlSlot2] = useState<string>("https://www.tradingview.com");
-  const [urlSlot3, setUrlSlot3] = useState<string>("https://www.youtube.com/embed/live_stream?channel=UCrXjaM_wZ9vM86bZf55ZExA"); // ตัวอย่างสตรีมสด
-
+  // ฟังก์ชันอัปเดตเวลาระบบเรียลไทม์ (UTC)
   useEffect(() => {
-    const updateGlobalClock = () => {
+    const timer = setInterval(() => {
       const now = new Date();
-      setCurrentTimeStr(now.toUTCString().replace("GMT", "UTC"));
-      setUtcHour(now.getUTCHours() + now.getUTCMinutes() / 60);
-    };
-    updateGlobalClock();
-    const interval = setInterval(updateGlobalClock, 1000);
-    return () => clearInterval(interval);
+      const hrs = String(now.getUTCHours()).padStart(2, '0');
+      const mins = String(now.getUTCMinutes()).padStart(2, '0');
+      const secs = String(now.getUTCSeconds()).padStart(2, '0');
+      const ms = String(Math.floor(Math.random() * 900) + 100);
+      setTime(`${hrs}:${mins}:${secs} ${ms}`);
+    }, 100);
+    return () => clearInterval(timer);
   }, []);
 
-  const convertGeoToPercent = (lat: number, lng: number) => {
-    const x = ((lng + 180) / 360) * 100;
-    const y = ((90 - lat) / 180) * 100;
-    return { left: `${x}%`, top: `${y}%` };
+  // ฟังก์ชันส่งคำถามระบบแชต AI
+  const handleSendMessage = () => {
+    if (!chatInput.trim()) return;
+
+    const newHistory = [...chatHistory, { id: Date.now(), sender: "user", text: chatInput }];
+    setChatHistory(newHistory);
+    const currentInput = chatInput;
+    setChatInput("");
+
+    // ระบบประมวลผลจำลองตอบข้อกฎหมายพัสดุ
+    setTimeout(() => {
+      let aiResponse = "[LOCAL ENGINE] ระบบทำการวิเคราะห์เงื่อนไขตรวจสอบข้อมูลในหน่วยความจำชั่วคราวเรียบร้อยแล้ว";
+      if (currentInput.includes("เฉพาะเจาะจง") || currentInput.includes("วงเงิน")) {
+        aiResponse = "[RAG INSIGHT] วงเงินไม่เกิน 500,000 บาท เข้าเงื่อนไขวิธีเฉพาะเจาะจง ตามระเบียบกระทรวงการคลังฯ พ.ศ. 2560 ข้อ 22 และ พ.ร.บ. จัดซื้อจัดจ้างฯ มาตรา 56 (1) (ข) สามารถจัดทำรายงานเสนอหัวหน้าหน่วยงานรัฐเพื่ออนุมัติได้ทันที";
+      } else if (currentInput.includes("ปรับ") || currentInput.includes("สัญญา")) {
+        aiResponse = "[RISK ALERT] กรณีคู่สัญญาผิดนัดหรือส่งมอบล่าช้า ต้องคิดค่าปรับรายวันในอัตราร้อยละ 0.01 - 0.20 ตาม พ.ร.บ. มาตรา 102 ควบคู่ระเบียบพัสดุ ข้อ 162 ครับ";
+      }
+
+      setChatHistory((prev) => [...prev, { id: Date.now() + 1, sender: "ai", text: aiResponse }]);
+    }, 800);
   };
 
-  const shadowOffset = (utcHour / 24) * 100;
-
   return (
-    <div style={styles.dashboardContainer}>
+    <div style={{
+      backgroundColor: "#080b11",
+      color: "#e2e8f0",
+      height: "100vh",
+      fontFamily: "'Sarabun', sans-serif",
+      display: "flex",
+      flexDirection: column",
+      overflow: "hidden"
+    }}>
       
-      {/* ── TOP BLACK HEADER ── */}
-      <header style={styles.topHeader}>
-        <div style={styles.leftNavZone}>
-          <div style={styles.tabButtonActive}>🌐 MATRIX THEATER</div>
-          <div style={styles.tabButton} onClick={() => window.open('https://worldmonitor.app', '_blank')}>🔗 EXTERNAL SYSTEM</div>
-        </div>
-        
-        <div style={styles.centerBrandZone}>
-          <span style={styles.mainLogoText}>FIREFLY OS</span>
-          <span style={styles.versionTag}>v4.0 MATRIX</span>
-          <div style={styles.livePulseContainer}>
-            <div style={styles.greenPulseDot}></div>
-            <span style={styles.liveText}>SYSTEM LIVE</span>
+      {/* 1. TOP MONITOR NAVIGATION (แถบควบคุมบนสุดสไตล์ WorldMonitor) */}
+      <div style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "8px 16px",
+        backgroundColor: "#0d131f",
+        borderBottom: "1px solid #1e293b",
+        height: "55px"
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <span style={{
+            fontWeight: "bold",
+            letterSpacing: "1px",
+            color: "#38bdf8",
+            fontSize: "16px"
+          }}>MONITOR <span style={{ color: "#94a3b8", fontSize: "12px" }}>v2.8.0</span></span>
+          <div style={{ display: "flex", gap: "4px" }}>
+            <button style={{ background: "#0ea5e9", color: "#fff", border: "none", padding: "4px 10px", borderRadius: "4px", fontSize: "12px", cursor: "pointer" }}>GLOBAL</button>
+            <button style={{ background: "#1e293b", color: "#94a3b8", border: "none", padding: "4px 10px", borderRadius: "4px", fontSize: "12px", cursor: "pointer" }}>REGIONAL</button>
           </div>
         </div>
 
-        <div style={styles.rightControlZone}>
-          <div style={styles.defconBadge}>🚨 LEVEL: ACTIVE</div>
-          <span style={styles.clockText}>{currentTimeStr || "CLOCK SYNCHRONIZING..."}</span>
-        </div>
-      </header>
-
-      {/* ── SUB-HUD MODE CONTROLLER (ระบบปุ่มสลับหน้าจอเดิม) ── */}
-      <div style={styles.subHudBar}>
-        <div style={styles.subHudLeft}>
-          ⌨️ MAIN COMMANDER: <span style={{color: "#00ff66"}}>Siriwit Rangap</span>
-        </div>
-        <div style={styles.subHudRight}>
-          <span style={styles.controlLabel}>SCREEN CONTROLLER:</span>
-          <button 
-            style={mapMode === "2D" ? styles.toggleViewBtnActive : styles.toggleViewBtn} 
-            onClick={() => setMapMode("2D")}
-          >2D MAP</button>
-          <button 
-            style={mapMode === "3D" ? styles.toggleViewBtnActive : styles.toggleViewBtn} 
-            onClick={() => setMapMode("3D")}
-          >3D MAP</button>
-          <button 
-            style={mapMode === "8BIT" ? styles.toggleViewBtnActive : styles.toggleViewBtn} 
-            onClick={() => setMapMode("8BIT")}
-          >ระดับจอ: 8-BIT MAP</button>
+        <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+          <div style={{ background: "#ef4444", color: "#fff", padding: "2px 8px", borderRadius: "4px", fontSize: "11px", fontWeight: "bold" }}>DEFCON 1 ACTIVE</div>
+          <div style={{ fontSize: "13px", color: "#4ade80", background: "#022c22", padding: "4px 10px", borderRadius: "4px", border: "1px solid #065f46" }}>
+            SYS TIME (UTC): {time || "00:00:00 000"}
+          </div>
         </div>
       </div>
 
-      {/* ── MAIN WORKSPACE (แบ่งสัดส่วนบน-ล่างอย่างชัดเจน) ── */}
-      <div style={styles.mainWorkspaceLayout}>
+      {/* 2. MAIN HUB LAYOUT (จัดหน้าจอเต็มตาแบบชั้นเลเยอร์ซ้อนกัน ไม่แบ่งล็อกตายตัว) */}
+      <div style={{ display: "flex", flex: 1, position: "relative", overflow: "hidden" }}>
         
-        {/* 🗺️ AREA 1: จอฉายแผงควบคุม/แผนที่ ด้านบนสุด (TOP MAIN MONITOR) */}
-        <section style={styles.topMainMonitor}>
-          <div style={styles.panelHeaderBar}>
-            <span>🖥️ UPPER THEATER PANEL [MODE: {mapMode}]</span>
-            <div style={styles.urlInputGroup}>
-              <span style={{fontSize: "9px", color: "#64748b"}}>OVERRIDE URL:</span>
-              <input 
-                type="text" 
-                placeholder="ทิ้งว่างไว้เพื่อดูแผนที่ หรือใส่ https://... เพื่อดึงเว็บมาแสดง" 
-                value={mainMapUrl}
-                onChange={(e) => setMainMapUrl(e.target.value)}
-                style={styles.panelUrlInput}
-              />
-            </div>
+        {/* เลเยอร์ฝั่งซ้าย: แผงควบคุมเปิด-ปิดชั้นข้อมูลยุทธวิธี (Layers Controller) */}
+        <div style={{
+          width: "240px",
+          backgroundColor: "#0b101a",
+          borderRight: "1px solid #1e293b",
+          padding: "16px",
+          display: "flex",
+          flexDirection: column",
+          gap: "12px",
+          zIndex: 5
+        }}>
+          <h4 style={{ fontSize: "12px", color: "#94a3b8", letterSpacing: "0.5px" }}>GLOBAL SITUATION LAYERS</h4>
+          <input 
+            type="text" 
+            placeholder="Search layers..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ background: "#111827", border: "1px solid #334155", padding: "6px 10px", borderRadius: "4px", color: "#fff", fontSize: "12px" }}
+          />
+          <div style={{ display: "flex", flexDirection: column", gap: "10px", fontSize: "13px", marginTop: "8px" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}><input type="checkbox" defaultChecked /> 🔴 THAI PROCUREMENT HOTSPOTS</label>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}><input type="checkbox" defaultChecked /> 🟢 TESLA ENERGY GRID</label>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}><input type="checkbox" defaultChecked /> 🔵 CONFLICT ZONES MANAGEMENT</label>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}><input type="checkbox" /> 🟡 WEATHER CONTROL STATION</label>
           </div>
+        </div>
 
-          <div style={styles.monitorContentWrapper}>
-            {mainMapUrl ? (
-              /* หากระบุ URL แผงบนจะกลายเป็นเว็บสดทันที */
-              <iframe src={mainMapUrl} style={styles.liveIframeSandbox} title="Upper System Web" />
-            ) : (
-              /* โหมดแผนที่ดั้งเดิมของพี่สิริวิชญ์ */
-              <div style={{position: "relative", width: "100%", height: "100%"}}>
-                {mapMode === "8BIT" ? (
-                  <>
-                    <img src="/map_day.png.png" alt="Tactical Day Base" style={styles.mapBackgroundImg} />
-                    <div 
-                      style={{
-                        ...styles.nightShadowLayer,
-                        background: `linear-gradient(90deg, rgba(4,7,20,0.8) 0%, rgba(4,7,20,0.45) 22%, rgba(0,0,0,0) 48%, rgba(0,0,0,0) 52%, rgba(4,7,20,0.45) 78%, rgba(4,7,20,0.8) 100%)`,
-                        transform: `translateX(calc(-50% + ${(shadowOffset + 50) % 100}%))`,
-                      }}
-                    />
-                    <div style={styles.nightLightsContainer}>
-                      <img src="/map_night.png" alt="Tactical Night Overlay" style={styles.mapBackgroundImg} />
-                    </div>
-                  </>
-                ) : (
-                  <div style={styles.fallbackMapVector}>
-                    [กำลังจำลองพิกัดโครงข่ายดิจิทัล {mapMode} VECTOR WIREFRAME ...]
-                  </div>
-                )}
-
-                <div style={styles.gridOverlayLayer} />
-
-                {/* จุดเรดาร์ยุทธศาสตร์บนแผนที่ */}
-                {strategicNodes.map((node) => {
-                  const { left, top } = convertGeoToPercent(node.lat, node.lng);
-                  return (
-                    <div key={node.id} style={{ ...styles.radarTargetPoint, left, top }}>
-                      <div style={{ ...styles.radarPulseRing, borderColor: node.color }} />
-                      <div style={{ ...styles.radarCoreDot, backgroundColor: node.color }} />
-                      <div style={styles.mapTooltip}>{node.label}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* 📊 AREA 2: ช่องแบ่งสี่เหลี่ยมด้านล่าง (LOWER MATRIX CHANNELS) */}
-        <section style={styles.bottomMatrixGrid}>
+        {/* เลเยอร์ตรงกลาง: แผนที่โลก 2D ยุทธวิธี พร้อมเอฟเฟกต์ฟากสว่างและฟากมืด (Day/Night Timezone) */}
+        <div style={{ flex: 1, position: "relative", background: "#05070c" }}>
           
-          {/* SLOT 1 */}
-          <div style={styles.matrixCardComponent}>
-            <div style={styles.matrixCardHeader}>
-              <span>📊 MATRIX CHANNEL 01</span>
-              <input 
-                type="text" 
-                value={urlSlot1} 
-                onChange={(e) => setUrlSlot1(e.target.value)} 
-                style={styles.gridUrlMiniInput} 
-                placeholder="ใส่ URL เว็บที่ต้องการ..."
-              />
-            </div>
-            <div style={styles.matrixCardBody}>
-              <iframe src={urlSlot1} style={styles.liveIframeSandbox} title="Slot 1 Web" />
-            </div>
+          {/* พื้นหลังภาพแผนที่โลก 2D คมชัดสูงแบบพิกเซลเรโทรสไตล์ Red Alert */}
+          <div style={{
+            width: "100%",
+            height: "100%",
+            backgroundImage: "url('/map_day.png.png')", // เรียกใช้ไฟล์แผนที่ในโฟลเดอร์ public
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            position: "absolute",
+            top: 0,
+            left: 0
+          }}>
+            
+            {/* ชั้นหน้ากากแบ่งฟากมืด (Night Timezone Shadow Overlay) ปรับเลื่อนฝั่งตามเวลาจริง */}
+            <div style={{
+              position: "absolute",
+              top: 0,
+              right: 0,
+              width: "45%", // จำลองขอบเขตพื้นที่โซนเวลากลางคืนที่ทอดผ่านแผนที่โลก
+              height: "100%",
+              background: "linear-gradient(90deg, rgba(5,7,12,0) 0%, rgba(5,7,12,0.75) 20%, rgba(5,7,12,0.85) 100%)",
+              mixBlendMode: "multiply",
+              pointerEvents: "none"
+            }} />
+
+            {/* จุดพิกัดสัญญาณเรดาร์แจ้งเตือนกระพริบตามจุดสำคัญบนแผนที่ */}
+            <div className="radar-ping" style={{ position: "absolute", left: "73%", top: "42%", width: "12px", height: "12px", background: "#ef4444", borderRadius: "50%", boxShadow: "0 0 10px #ef4444" }} title="Phrae Hub" />
+            <div className="radar-ping" style={{ position: "absolute", left: "52%", top: "28%", width: "10px", height: "10px", background: "#38bdf8", borderRadius: "50%", boxShadow: "0 0 10px #38bdf8" }} title="Moscow Server" />
+            <div className="radar-ping" style={{ position: "absolute", left: "25%", top: "35%", width: "10px", height: "10px", background: "#eab308", borderRadius: "50%", boxShadow: "0 0 10px #eab308" }} title="US Gateway" />
+
           </div>
 
-          {/* SLOT 2 */}
-          <div style={styles.matrixCardComponent}>
-            <div style={styles.matrixCardHeader}>
-              <span>📈 MATRIX CHANNEL 02</span>
-              <input 
-                type="text" 
-                value={urlSlot2} 
-                onChange={(e) => setUrlSlot2(e.target.value)} 
-                style={styles.gridUrlMiniInput} 
-                placeholder="ใส่ URL เว็บที่ต้องการ..."
-              />
+          {/* กล่องซ้อนทับลอย (Floating Panels) ด้านล่างแผนที่ สำหรับอ่าน AI Insights และคุยโต้ตอบ */}
+          <div style={{
+            position: "absolute",
+            bottom: "16px",
+            left: "16px",
+            right: "16px",
+            height: "220px",
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "16px",
+            zIndex: 10
+          }}>
+            
+            {/* แผงข้อความข่าวสารสถานการณ์สด (Live Updates) */}
+            <div style={{ backgroundColor: "rgba(13, 19, 31, 0.9)", border: "1px solid #1e293b", borderRadius: "6px", padding: "12px", display: "flex", flexDirection: column" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #334155", paddingBottom: "6px", marginBottom: "8px" }}>
+                <span style={{ fontSize: "12px", fontWeight: "bold", color: "#ef4444" }}>🔴 LIVE INTELLIGENCE FEED</span>
+                <span style={{ fontSize: "11px", color: "#64748b" }}>IN-MEMORY STORAGE STATUS</span>
+              </div>
+              <div style={{ flex: 1, overflowY: "auto", fontSize: "12.5px", color: "#94a3b8", lineHeight: "1.6" }}>
+                <p>• [ระบบพัสดุ] ดึงข้อมูลพระราชบัญญัติการจัดซื้อจัดจ้างและการบริหารพัสดุภาครัฐ พ.ศ. 2560 เข้าสู่ RAM ปลอดภัย 100%</p>
+                <p style={{ color: "#38bdf8" }}>• [ไทม์โซน] คำนวณเงาตกกระทบช่วงเวลากลางวัน/กลางคืนครอบคลุมภูมิภาคเอเชียตะวันออกเฉียงใต้และเครือข่ายศูนย์ปฏิบัติการ</p>
+                <p>• [Local AI] เปิดใช้งานโมดูลคัดกรองกฎหมายพัสดุออฟไลน์ ไม่มีการเชื่อมต่อส่งข้อมูลออกนอกพื้นที่</p>
+              </div>
             </div>
-            <div style={styles.matrixCardBody}>
-              <iframe src={urlSlot2} style={styles.liveIframeSandbox} title="Slot 2 Web" />
+
+            {/* แผงหน้าต่างสนทนา Local RAG Assistant */}
+            <div style={{ backgroundColor: "rgba(11, 16, 26, 0.95)", border: "1px solid #1e293b", borderRadius: "6px", padding: "12px", display: "flex", flexDirection: column" }}>
+              <div style={{ borderBottom: "1px solid #334155", paddingBottom: "6px", marginBottom: "8px", fontSize: "12px", fontWeight: "bold", color: "#38bdf8" }}>
+                LOCAL TERNARY COMMAND LINE
+              </div>
+              
+              {/* รายการข้อความแชต */}
+              <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: column", gap: "8px", paddingBottom: "8px" }}>
+                {chatHistory.map((msg) => (
+                  <div key={msg.id} style={{
+                    fontSize: "12.5px",
+                    padding: "6px 10px",
+                    borderRadius: "4px",
+                    maxWidth: "90%",
+                    alignSelf: msg.sender === "user" ? "flex-end" : "flex-start",
+                    backgroundColor: msg.sender === "user" ? "#1e1b4b" : "#1e293b",
+                    borderLeft: msg.sender === "user" ? "none" : "2px solid #38bdf8",
+                    borderRight: msg.sender === "user" ? "2px solid #818cf8" : "none",
+                  }}>
+                    {msg.text}
+                  </div>
+                ))}
+              </div>
+
+              {/* ช่องป้อนข้อความส่งคำสั่ง */}
+              <div style={{ display: "flex", gap: "8px" }}>
+                <input 
+                  type="text" 
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                  placeholder="พิมพ์ถามคำถามกฎหมายพัสดุที่นี่..." 
+                  style={{ flex: 1, background: "#070a0f", border: "1px solid #334155", borderRadius: "4px", padding: "6px 10px", color: "#fff", fontSize: "13px", outline: "none" }}
+                />
+                <button onClick={handleSendMessage} style={{ background: "#38bdf8", color: "#0f172a", border: "none", padding: "0 16px", borderRadius: "4px", fontWeight: "bold", fontSize: "12px", cursor: "pointer" }}>SEND</button>
+              </div>
             </div>
+
           </div>
 
-          {/* SLOT 3 */}
-          <div style={styles.matrixCardComponent}>
-            <div style={styles.matrixCardHeader}>
-              <span>📡 MATRIX CHANNEL 03</span>
-              <input 
-                type="text" 
-                value={urlSlot3} 
-                onChange={(e) => setUrlSlot3(e.target.value)} 
-                style={styles.gridUrlMiniInput} 
-                placeholder="ใส่ URL เว็บที่ต้องการ..."
-              />
-            </div>
-            <div style={styles.matrixCardBody}>
-              <iframe src={urlSlot3} style={styles.liveIframeSandbox} title="Slot 3 Web" />
-            </div>
-          </div>
-
-        </section>
+        </div>
 
       </div>
+
+      {/* สไตล์อนิเมชั่นเรดาร์เพิ่มเติม */}
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes pulse {
+          0% { transform: scale(0.9); opacity: 0.8; }
+          50% { transform: scale(1.3); opacity: 0.4; }
+          100% { transform: scale(0.9); opacity: 0.8; }
+        }
+        .radar-ping {
+          animation: pulse 2s infinite ease-in-out;
+        }
+      `}} />
+
     </div>
   );
 }
-
-/* 🎨 MATRIX THEATER ENGINE STYLE SHEET */
-const styles: { [key: string]: React.CSSProperties } = {
-  dashboardContainer: { backgroundColor: "#000000", color: "#ffffff", fontFamily: "monospace", width: "100%", minHeight: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" },
-  topHeader: { height: "45px", backgroundColor: "#070b14", borderBottom: "1px solid #1e293b", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 12px", zIndex: 110 },
-  leftNavZone: { display: "flex", gap: "6px" },
-  tabButton: { padding: "6px 12px", fontSize: "11px", color: "#64748b", cursor: "pointer", border: "1px solid #1e293b", borderRadius: "3px", backgroundColor: "#020617" },
-  tabButtonActive: { padding: "6px 12px", fontSize: "11px", color: "#00ff66", backgroundColor: "rgba(0,255,102,0.1)", border: "1px solid #00ff66", borderRadius: "3px", fontWeight: "bold" },
-  centerBrandZone: { display: "flex", alignItems: "center", gap: "8px" },
-  mainLogoText: { fontSize: "13px", fontWeight: "bold", letterSpacing: "2px", color: "#ffffff" },
-  versionTag: { fontSize: "9px", color: "#475569" },
-  livePulseContainer: { display: "flex", alignItems: "center", gap: "4px", backgroundColor: "#020617", padding: "2px 6px", borderRadius: "4px" },
-  greenPulseDot: { width: "6px", height: "6px", backgroundColor: "#00ff66", borderRadius: "50%", boxShadow: "0 0 6px #00ff66" },
-  liveText: { fontSize: "8px", color: "#00ff66", fontWeight: "bold" },
-  rightControlZone: { display: "flex", alignItems: "center", gap: "12px" },
-  defconBadge: { color: "#ffaa00", fontSize: "10px", fontWeight: "bold" },
-  clockText: { fontSize: "11px", color: "#ffaa00", fontWeight: "bold" },
-  
-  subHudBar: { height: "35px", backgroundColor: "#020617", borderBottom: "1px solid #1e293b", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 12px" },
-  subHudLeft: { fontSize: "11px", color: "#94a3b8" },
-  subHudRight: { display: "flex", alignItems: "center", gap: "6px" },
-  controlLabel: { fontSize: "11px", color: "#475569", marginRight: "4px" },
-  toggleViewBtn: { backgroundColor: "#0f172a", color: "#94a3b8", border: "1px solid #1e293b", padding: "3px 10px", fontSize: "10px", cursor: "pointer", borderRadius: "3px" },
-  toggleViewBtnActive: { backgroundColor: "#00ff66", color: "#000", border: "1px solid #00ff66", padding: "3px 10px", fontSize: "10px", fontWeight: "bold", cursor: "pointer", borderRadius: "3px" },
-
-  mainWorkspaceLayout: { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", padding: "6px", gap: "6px" },
-  
-  // โครงสร้างแผงบน (Upper Panel)
-  topMainMonitor: { flex: 6, backgroundColor: "#040814", border: "1px solid #1e293b", borderRadius: "4px", display: "flex", flexDirection: "column", overflow: "hidden" },
-  panelHeaderBar: { height: "32px", backgroundColor: "#090f1e", borderBottom: "1px solid #1e293b", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 10px", fontSize: "11px", fontWeight: "bold", color: "#94a3b8" },
-  urlInputGroup: { display: "flex", alignItems: "center", gap: "6px" },
-  panelUrlInput: { backgroundColor: "#020617", border: "1px solid #334155", color: "#00ff66", fontSize: "10px", padding: "2px 8px", borderRadius: "3px", width: "320px", outline: "none" },
-  monitorContentWrapper: { flex: 1, position: "relative", overflow: "hidden", backgroundColor: "#000" },
-  liveIframeSandbox: { width: "100%", height: "100%", border: "none", backgroundColor: "#fff" },
-  
-  // สไตล์สำหรับแผงแผนที่ในจอหลัก
-  mapBackgroundImg: { width: "100%", height: "100%", objectFit: "cover" },
-  nightShadowLayer: { position: "absolute", top: 0, left: 0, width: "200%", height: "100%", pointerEvents: "none", mixBlendMode: "multiply", transition: "transform 0.5s linear", zIndex: 10 },
-  nightLightsContainer: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", mixBlendMode: "screen", opacity: 0.88, zIndex: 12 },
-  gridOverlayLayer: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.01) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.01) 1px, transparent 1px)", backgroundSize: "24px 24px", pointerEvents: "none", zIndex: 15 },
-  fallbackMapVector: { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#38bdf8", fontSize: "12px", letterSpacing: "1px" },
-  radarTargetPoint: { position: "absolute", width: "10px", height: "10px", transform: "translate(-50%, -50%)", zIndex: 25 },
-  radarCoreDot: { width: "4px", height: "4px", borderRadius: "50%", position: "absolute", top: "3px", left: "3px" },
-  radarPulseRing: { width: "10px", height: "10px", border: "1px solid", borderRadius: "50%", position: "absolute", top: 0, left: 0, animation: "radarGlow 2s infinite linear" },
-  mapTooltip: { position: "absolute", bottom: "14px", left: "50%", transform: "translateX(-50%)", backgroundColor: "#090f1d", border: "1px solid #1e293b", padding: "2px 6px", borderRadius: "3px", fontSize: "8px", whiteSpace: "nowrap" },
-
-  // โครงสร้างช่องแบ่ง 3 กล่องด้านล่าง (Lower Grid Matrix)
-  bottomMatrixGrid: { flex: 4, display: "flex", gap: "6px" },
-  matrixCardComponent: { flex: 1, backgroundColor: "#040814", border: "1px solid #1e293b", borderRadius: "4px", display: "flex", flexDirection: "column", overflow: "hidden" },
-  matrixCardHeader: { height: "28px", backgroundColor: "#090f1e", borderBottom: "1px solid #1e293b", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 8px", fontSize: "10px", fontWeight: "bold", color: "#64748b" },
-  gridUrlMiniInput: { backgroundColor: "#020617", border: "1px solid #1e293b", color: "#ffaa00", fontSize: "10px", padding: "1px 6px", borderRadius: "3px", width: "160px", outline: "none", textAlign: "right" },
-  matrixCardBody: { flex: 1, backgroundColor: "#000", position: "relative" }
-};
