@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 
-// พิกัดจุดแสดงผลความเสี่ยง (Global Conflict & Intel Hotspots) ดึงข้อมูลตามบริบทระบบตรวจสอบภายใน
+// พิกัดจุดแสดงผลความเสี่ยง ดึงข้อมูลตามบริบทระบบตรวจสอบภายใน
 const monitorPins = [
   { id: 1, name: "Thailand Node (Phrae HQ)", lat: 18.1446, lng: 100.1403, status: "high", details: "INTERNAL AUDIT REPORT: Processing LINE Chatbot workflow summaries." },
   { id: 2, name: "Iran Theater (Critical Zone)", lat: 32.4279, lng: 53.6880, status: "high", details: "DEFCON 1: Tactical deployment and cybersecurity monitoring active." },
@@ -24,6 +24,9 @@ export default function WorldMonitor2D() {
     "https://www.cgd.go.th",
     "https://phrae.go.th"
   ]);
+  
+  // สถานะเก็บ URL เว็บที่กำลังเปิดดูในแผงควบคุม (Default ตัวแรกคือกรมบัญชีกลาง)
+  const [activeUrl, setActiveUrl] = useState<string>("https://www.gprocurement.go.th/new_index.html");
 
   useEffect(() => {
     const updateTime = () => {
@@ -35,7 +38,7 @@ export default function WorldMonitor2D() {
     return () => clearInterval(interval);
   }, []);
 
-  // ฟังก์ชันแปลงพิกัด Lat/Lng เป็น % บนแผนที่แบนราบ (Equirectangular projection)
+  // ฟังก์ชันแปลงพิกัด Lat/Lng เป็น % บนแผนที่
   const convertCoords = (lat: number, lng: number) => {
     const x = ((lng + 180) / 360) * 100;
     const y = ((90 - lat) / 180) * 100;
@@ -45,14 +48,24 @@ export default function WorldMonitor2D() {
   const handleAddChannel = (e: React.FormEvent) => {
     e.preventDefault();
     if (inputUrl.trim()) {
-      setDataChannels([...dataChannels, inputUrl.trim()]);
+      const formattedUrl = inputUrl.trim().startsWith("http") ? inputUrl.trim() : `https://${inputUrl.trim()}`;
+      setDataChannels([...dataChannels, formattedUrl]);
+      setActiveUrl(formattedUrl);
       setInputUrl("");
     }
   };
 
+  // ตัวช่วยแปลง URL เว็บไซต์รัฐบาลที่ติดความปลอดภัย (X-Frame) ให้สามารถฝังเปิดดูได้จริง
+  const getEmbeddableUrl = (url: string) => {
+    if (url.includes("gprocurement.go.th") || url.includes("cgd.go.th") || url.includes("go.th")) {
+      return `https://images.weserv.nl/?url=${encodeURIComponent(url)}&output=jpg` ? `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}` : url;
+    }
+    return url;
+  };
+
   return (
     <div style={styles.dashboardContainer}>
-      {/* 1. TOP HEADER (STATUS BAR เหมือนเว็บต้นฉบับ) */}
+      {/* 1. TOP HEADER STATUS BAR */}
       <header style={styles.header}>
         <div style={styles.brandZone}>
           <div style={styles.pulseDot}></div>
@@ -69,20 +82,19 @@ export default function WorldMonitor2D() {
         </div>
       </header>
 
-      {/* 2. MAIN MAP THEATER (พื้นที่แผนที่โลก 8-Bit เต็มความกว้างแบบต้นฉบับ ไม่มีแบ่ง 70/30) */}
+      {/* 2. MAIN MAP THEATER (หน้าจอแผนที่โลก ไม่แบ่ง 70/30) */}
       <section style={styles.mapTheater}>
         <div style={styles.mapContainer}>
-          {/* ใช้ภาพแผนที่โลกแบบ 8-bit Pixel Art เป็นพื้นหลังเต็มพื้นที่ */}
+          {/* เปลี่ยนไปใช้ภาพแผนที่แนว Sci-fi Grid คุณภาพสูง ดึงรูปขึ้นแน่นอน */}
           <img 
-            src="http://googleusercontent.com/image_collection/image_retrieval/11644614980546840199" 
-            alt="8-Bit Red Alert World Map" 
+            src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1920&auto=format&fit=crop" 
+            alt="Cyber Grid World Map" 
             style={styles.mapImage}
           />
           
-          {/* Overlay เส้น Grid ตารางพิกัดยุทธวิธี */}
           <div style={styles.mapGridOverlay}></div>
 
-          {/* ปักหมุดพิกัดเสี่ยงภัยภัยพิบัติ/ข้อมูลตรวจสอบ */}
+          {/* ปักหมุดพิกัดเสี่ยงภัย */}
           {monitorPins.map((pin) => {
             const { left, top } = convertCoords(pin.lat, pin.lng);
             return (
@@ -98,7 +110,7 @@ export default function WorldMonitor2D() {
                   boxShadow: `0 0 12px ${pin.status === "high" ? "#ef4444" : pin.status === "medium" ? "#facc15" : "#06b6d4"}`
                 }} />
                 
-                {/* Tooltip แสดงข้อมูลด่วนเมื่อ Hover */}
+                {/* Tooltip บอกรายละเอียดข้อมูล */}
                 {hoveredPin?.id === pin.id && (
                   <div style={styles.tooltip}>
                     <div style={styles.tooltipHeader}>{pin.name}</div>
@@ -111,7 +123,7 @@ export default function WorldMonitor2D() {
           })}
         </div>
 
-        {/* แถบวิ่งแจ้งสถานการณ์สด (News Ticker) ชิดขอบล่างของพื้นที่แผนที่ */}
+        {/* แถบข่าววิ่งด้านล่างแผนที่ */}
         <div style={styles.tickerBar}>
           <div style={styles.tickerLabel}>LIVE NEWS FEED</div>
           <div style={styles.tickerTrack}>
@@ -120,380 +132,10 @@ export default function WorldMonitor2D() {
         </div>
       </section>
 
-      {/* 3. BOTTOM INFRASTRUCTURE GRID (แบ่งแผงข้อมูลด้านล่างให้สัดส่วนสมดุลตามเว็บ WorldMonitor) */}
+      {/* 3. BOTTOM INFRASTRUCTURE GRID (แบ่งพื้นที่แบบ 50:50 สมดุล) */}
       <section style={styles.bottomGrid}>
         
-        {/* แผงควบคุมเพิ่มและตรวจสอบช่องข้อมูล (Multi-panel Input) */}
+        {/* แผงควบคุมซ้าย: การจัดการช่องสัญญาณเว็บ/ข้อมูลตรวจสอบ */}
         <div style={styles.panelCard}>
           <div style={styles.panelHeader}>
-            <span><span style={styles.accentText}>📌</span> แผงควบคุมและช่องข้อมูล (Multi-panel)</span>
-          </div>
-          <div style={styles.panelBody}>
-            <form onSubmit={handleAddChannel} style={styles.inputGroup}>
-              <input
-                type="text"
-                placeholder="วาง URL ข่าว หรือ API ไทย เช่น https://data.go.th"
-                value={inputUrl}
-                onChange={(e) => setInputUrl(e.target.value)}
-                style={styles.textInput}
-              />
-              <button type="submit" style={styles.submitBtn}>เพิ่มช่อง</button>
-            </form>
-            
-            <div style={styles.channelList}>
-              {dataChannels.map((url, idx) => (
-                <div key={idx} style={styles.channelItem}>
-                  <span style={styles.channelIndex}>CH {idx + 1}:</span>
-                  <span style={styles.channelUrl}>{url}</span>
-                  <span style={styles.channelStatus}>[ONLINE]</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* แผงข้อมูลสถานะระบบ AI & การวิเคราะห์เชิงยุทธวิธี */}
-        <div style={styles.panelCard}>
-          <div style={styles.panelHeader}>
-            <span><span style={styles.accentText}>⚡</span> AI STRATEGIC POSTURE & INTERNAL AUDIT</span>
-          </div>
-          <div style={styles.panelBody}>
-            <div style={styles.metricRow}>
-              <div style={styles.metricBox}>
-                <div style={styles.metricVal}>DEFCON 1</div>
-                <div style={styles.metricSub}>RISK THREAT LEVEL</div>
-              </div>
-              <div style={styles.metricBox}>
-                {/* ยุบรวม Style เข้าด้วยกันเพื่อแก้ปัญหา JSX multiple attributes เรียบร้อยแล้ว */}
-                <div style={{ ...styles.metricVal, color: "#facc15" }}>74%</div>
-                <div style={styles.metricSub}>PROCUREMENT STABILITY</div>
-              </div>
-              <div style={styles.metricBox}>
-                {/* ยุบรวม Style เข้าด้วยกันเพื่อแก้ปัญหา JSX multiple attributes เรียบร้อยแล้ว */}
-                <div style={{ ...styles.metricVal, color: "#a855f7" }}>READY</div>
-                <div style={styles.metricSub}>LINE LLM FLOWCHART</div>
-              </div>
-            </div>
-            <p style={styles.panelParagraph}>
-              ระบบวิเคราะห์ข้อมูลอัตโนมัติพร้อมสแกนรายงานการตรวจสอบภายใน โครงสร้างเว็บบอร์ดถูกปรับสัดส่วนตามสถาปัตยกรรม World-theater ไม่มีการใช้สัดส่วนหน้าต่างแยก 70:30 เพื่อการตรวจทานข้อมูลที่สมบูรณ์สูงสุดในระนาบเดียว
-            </p>
-          </div>
-        </div>
-
-      </section>
-    </div>
-  );
-}
-
-/* สไตล์สไตล์ชีทแบบ CSS-in-JS เพื่อการันตีสัดส่วนตามบรีฟ ห้าม 70/30 */
-const styles: { [key: string]: React.CSSProperties } = {
-  dashboardContainer: {
-    backgroundColor: "#060606",
-    color: "#00ff41",
-    fontFamily: "'Orbitron', 'Courier New', sans-serif",
-    width: "100vw",
-    minHeight: "100vh",
-    display: "flex",
-    flexDirection: "column",
-    overflowX: "hidden"
-  },
-  header: {
-    backgroundColor: "#0c0c0c",
-    borderBottom: "2px solid #222",
-    height: "60px",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "0 20px",
-    zIndex: 10
-  },
-  brandZone: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px"
-  },
-  pulseDot: {
-    width: "8px",
-    height: "8px",
-    backgroundColor: "#ef4444",
-    borderRadius: "50%",
-    boxShadow: "0 0 8px #ef4444"
-  },
-  brandTitle: {
-    fontWeight: "bold",
-    fontSize: "16px",
-    letterSpacing: "1px",
-    color: "#ffffff"
-  },
-  editionText: {
-    color: "#ef4444",
-    fontSize: "11px",
-    fontFamily: "monospace"
-  },
-  centralStatus: {
-    display: "flex",
-    alignItems: "center",
-    gap: "20px"
-  },
-  defconBox: {
-    backgroundColor: "#ef4444",
-    color: "#fff",
-    padding: "3px 8px",
-    fontSize: "12px",
-    fontWeight: "bold",
-    borderRadius: "3px"
-  },
-  statusIndicator: {
-    color: "#00ff41",
-    fontSize: "13px",
-    fontWeight: "bold"
-  },
-  systemStatus: {
-    color: "#888",
-    fontSize: "13px",
-    letterSpacing: "1px"
-  },
-  timeZone: {
-    textAlign: "right"
-  },
-  timeLabel: {
-    display: "block",
-    fontSize: "9px",
-    color: "#666",
-    fontFamily: "monospace"
-  },
-  timeText: {
-    fontSize: "14px",
-    color: "#00ff41",
-    fontWeight: "bold",
-    fontFamily: "monospace"
-  },
-  mapTheater: {
-    position: "relative",
-    width: "100%",
-    height: "55vh",
-    backgroundColor: "#0d0f14",
-    borderBottom: "2px solid #222"
-  },
-  mapContainer: {
-    position: "relative",
-    width: "100%",
-    height: "calc(100% - 35px)",
-    overflow: "hidden"
-  },
-  mapImage: {
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-    imageRendering: "pixelated",
-    opacity: 0.75
-  },
-  mapGridOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
-    backgroundImage: "linear-gradient(rgba(0, 255, 65, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 65, 0.05) 1px, transparent 1px)",
-    backgroundSize: "40px 40px",
-    pointerEvents: "none"
-  },
-  pinMarker: {
-    position: "absolute",
-    width: "16px",
-    height: "16px",
-    transform: "translate(-50%, -50%)",
-    cursor: "pointer",
-    zIndex: 5
-  },
-  pinRadar: {
-    width: "10px",
-    height: "10px",
-    borderRadius: "50%",
-    position: "absolute",
-    top: "3px",
-    left: "3px"
-  },
-  tooltip: {
-    position: "absolute",
-    bottom: "25px",
-    left: "50%",
-    transform: "translateX(-50%)",
-    backgroundColor: "rgba(10, 10, 10, 0.95)",
-    border: "1px solid #00ff41",
-    padding: "10px",
-    borderRadius: "4px",
-    width: "260px",
-    zIndex: 20,
-    boxShadow: "0 4px 20px rgba(0,0,0,0.8)"
-  },
-  tooltipHeader: {
-    color: "#fff",
-    fontSize: "12px",
-    fontWeight: "bold",
-    marginBottom: "5px",
-    borderBottom: "1px solid #333",
-    paddingBottom: "3px",
-    fontFamily: "monospace"
-  },
-  tooltipBody: {
-    color: "#aaa",
-    fontSize: "11px",
-    lineHeight: "1.4",
-    marginBottom: "5px"
-  },
-  tooltipCoords: {
-    color: "#00ff41",
-    fontSize: "9px",
-    fontFamily: "monospace"
-  },
-  tickerBar: {
-    height: "35px",
-    backgroundColor: "#050505",
-    borderTop: "1px solid #222",
-    display: "flex",
-    alignItems: "center",
-    overflow: "hidden"
-  },
-  tickerLabel: {
-    backgroundColor: "#ef4444",
-    color: "#fff",
-    padding: "0 12px",
-    fontSize: "11px",
-    fontWeight: "bold",
-    height: "100%",
-    display: "flex",
-    alignItems: "center",
-    flexShrink: 0,
-    fontFamily: "monospace"
-  },
-  tickerTrack: {
-    width: "100%",
-    overflow: "hidden"
-  },
-  tickerText: {
-    display: "inline-block",
-    whiteSpace: "nowrap",
-    paddingLeft: "100%",
-    animation: "tickerAnimation 25s linear infinite",
-    fontSize: "13px",
-    color: "#00ff41",
-    fontFamily: "monospace"
-  },
-  bottomGrid: {
-    flex: 1,
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "20px",
-    padding: "20px",
-    backgroundColor: "#060606"
-  },
-  panelCard: {
-    backgroundColor: "#0d0d0d",
-    border: "1px solid #222",
-    borderRadius: "4px",
-    display: "flex",
-    flexDirection: "column"
-  },
-  panelHeader: {
-    backgroundColor: "#121212",
-    padding: "10px 15px",
-    borderBottom: "1px solid #222",
-    fontSize: "13px",
-    fontWeight: "bold",
-    color: "#ffffff"
-  },
-  accentText: {
-    marginRight: "5px"
-  },
-  panelBody: {
-    padding: "15px",
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    gap: "15px"
-  },
-  inputGroup: {
-    display: "flex",
-    gap: "10px"
-  },
-  textInput: {
-    flex: 1,
-    backgroundColor: "#000",
-    border: "1px solid #333",
-    borderRadius: "3px",
-    padding: "8px 12px",
-    color: "#00ff41",
-    fontSize: "13px",
-    fontFamily: "monospace"
-  },
-  submitBtn: {
-    backgroundColor: "#00ff41",
-    color: "#000",
-    border: "none",
-    borderRadius: "3px",
-    padding: "0 15px",
-    fontSize: "12px",
-    fontWeight: "bold",
-    cursor: "pointer"
-  },
-  channelList: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "8px",
-    overflowY: "auto",
-    maxHeight: "150px"
-  },
-  channelItem: {
-    display: "flex",
-    justifyContent: "space-between",
-    backgroundColor: "#000",
-    border: "1px solid #1a1a1a",
-    padding: "8px 12px",
-    borderRadius: "3px",
-    fontSize: "12px"
-  },
-  channelIndex: {
-    color: "#666",
-    fontWeight: "bold",
-    marginRight: "5px"
-  },
-  channelUrl: {
-    color: "#bbb",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-    maxWidth: "70%"
-  },
-  channelStatus: {
-    color: "#00ff41",
-    fontFamily: "monospace"
-  },
-  metricRow: {
-    display: "flex",
-    gap: "15px"
-  },
-  metricBox: {
-    flex: 1,
-    backgroundColor: "#000",
-    border: "1px solid #222",
-    padding: "12px",
-    borderRadius: "3px",
-    textAlign: "center"
-  },
-  metricVal: {
-    fontSize: "18px",
-    fontWeight: "bold",
-    color: "#ef4444",
-    marginBottom: "4px"
-  },
-  metricSub: {
-    fontSize: "9px",
-    color: "#666"
-  },
-  panelParagraph: {
-    fontSize: "12px",
-    color: "#888",
-    lineHeight: "1.6"
-  }
-};
+            <span><span style={styles.accentText}>📌
