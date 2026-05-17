@@ -15,7 +15,7 @@ const monitorPins = [
 export default function WorldMonitor2D() {
   const [currentTime, setCurrentTime] = useState<string>("");
   const [hoveredPin, setHoveredPin] = useState<any>(null);
-  const [newsFeed, setNewsFeed] = useState<string>(
+  const [newsFeed] = useState<string>(
     "SOVIET INVADERS DETECTED IN NORTH ATLANTIC THEATER ... CHRONOSPHERE SIGNATURE ACTIVATED IN PACIFIC SECTOR ... YURI'S MIND CONTROL TOWERS DETECTED ... SYSTEM ONLINE ..."
   );
   const [inputUrl, setInputUrl] = useState<string>("");
@@ -164,11 +164,13 @@ export default function WorldMonitor2D() {
                 <div style={styles.metricSub}>RISK THREAT LEVEL</div>
               </div>
               <div style={styles.metricBox}>
-                <div style={styles.metricVal} style={{ color: "#facc15" }}>74%</div>
+                {/* ยุบรวม Style เข้าด้วยกันเพื่อแก้ปัญหา JSX multiple attributes เรียบร้อยแล้ว */}
+                <div style={{ ...styles.metricVal, color: "#facc15" }}>74%</div>
                 <div style={styles.metricSub}>PROCUREMENT STABILITY</div>
               </div>
               <div style={styles.metricBox}>
-                <div style={styles.metricVal} style={{ color: "#a855f7" }}>READY</div>
+                {/* ยุบรวม Style เข้าด้วยกันเพื่อแก้ปัญหา JSX multiple attributes เรียบร้อยแล้ว */}
+                <div style={{ ...styles.metricVal, color: "#a855f7" }}>READY</div>
                 <div style={styles.metricSub}>LINE LLM FLOWCHART</div>
               </div>
             </div>
@@ -269,7 +271,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   mapTheater: {
     position: "relative",
     width: "100%",
-    height: "55vh", // ดึงเป็นแผ่นกระดานโลกยาวเต็มพื้นที่ขอบชนขอบ
+    height: "55vh",
     backgroundColor: "#0d0f14",
     borderBottom: "2px solid #222"
   },
@@ -381,7 +383,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   bottomGrid: {
     flex: 1,
     display: "grid",
-    gridTemplateColumns: "1fr 1fr", // แบ่งครึ่งซ้ายขวาเท่ากัน 50:50 สมดุล สวยงามตามโมเดล Dashboard มาตรฐาน
+    gridTemplateColumns: "1fr 1fr",
     gap: "20px",
     padding: "20px",
     backgroundColor: "#060606"
