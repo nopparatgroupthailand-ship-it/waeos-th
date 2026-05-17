@@ -2,31 +2,27 @@
 
 import React, { useState, useEffect } from "react";
 
-// พิกัดจุดแสดงผลความเสี่ยง ดึงข้อมูลตามบริบทระบบตรวจสอบภายใน
+// พิกัดจุดตรวจจับความเสี่ยง ยึดตามตำแหน่งยุทธศาสตร์ในระบบตรวจสอบภายในและสมรภูมิหลัก
 const monitorPins = [
-  { id: 1, name: "Thailand Node (Phrae HQ)", lat: 18.1446, lng: 100.1403, status: "high", details: "INTERNAL AUDIT REPORT: Processing LINE Chatbot workflow summaries." },
-  { id: 2, name: "Iran Theater (Critical Zone)", lat: 32.4279, lng: 53.6880, status: "high", details: "DEFCON 1: Tactical deployment and cybersecurity monitoring active." },
-  { id: 3, name: "South China Sea Node", lat: 10.0000, lng: 114.0000, status: "medium", details: "Conflict Zone: Supply chain and maritime logistics route analysis." },
-  { id: 4, name: "North America Sync", lat: 38.9072, lng: -77.0369, status: "low", details: "Vercel Deployment Node: Build automation logs successfully optimized." },
-  { id: 5, name: "Europe Operations", lat: 48.8566, lng: 2.3522, status: "medium", details: "Radiation Watch // LegalTech integration framework checks." },
-  { id: 6, name: "Beijing Intelligence Node", lat: 39.9042, lng: 116.4074, status: "high", details: "High Alert: Automated procurement anomaly detection system testing." }
+  { id: 1, name: "THAILAND NODE (PHRAE HQ)", lat: 18.1446, lng: 100.1403, status: "high", details: "INTERNAL AUDIT SYSTEM: LINE Chatbot workflow compiling procurement checklists." },
+  { id: 2, name: "MOSCOW OUTPOST (SOVIET SECTOR)", lat: 55.7558, lng: 37.6173, status: "high", details: "TESLA GRID ACTIVE: High threat level detected in internal financial assets." },
+  { id: 3, name: "IRAN THEATER (CRITICAL ZONE)", lat: 32.4279, lng: 53.6880, status: "high", details: "DEFCON 1: Tactical communication sync with remote nodes active." },
+  { id: 4, name: "SOUTH CHINA SEA NODE", lat: 10.0000, lng: 114.0000, status: "medium", details: "LOGISTICS ALERT: Supply chain risk analysis triggered via automated audit." },
+  { id: 5, name: "NORTH AMERICA SYNC (VERCEL)", lat: 38.9072, lng: -77.0369, status: "low", details: "SYSTEM ONLINE: Central brain engine processing automated data channels." }
 ];
 
 export default function WorldMonitor2D() {
   const [currentTime, setCurrentTime] = useState<string>("");
   const [hoveredPin, setHoveredPin] = useState<any>(null);
-  const [newsFeed] = useState<string>(
-    "SOVIET INVADERS DETECTED IN NORTH ATLANTIC THEATER ... CHRONOSPHERE SIGNATURE ACTIVATED IN PACIFIC SECTOR ... YURI'S MIND CONTROL TOWERS DETECTED ... SYSTEM ONLINE ..."
-  );
+  const [activeChannel, setActiveChannel] = useState<number>(0);
   const [inputUrl, setInputUrl] = useState<string>("");
+  
+  // รายการช่องสัญญาณเชื่อมโยงข้อมูลตรวจสอบพัสดุและจังหวัด
   const [dataChannels, setDataChannels] = useState<string[]>([
     "https://www.gprocurement.go.th/new_index.html",
     "https://www.cgd.go.th",
     "https://phrae.go.th"
   ]);
-  
-  // กำหนดช่องสัญญาณแรกเริ่มต้น
-  const [activeUrl, setActiveUrl] = useState<string>("https://www.gprocurement.go.th/new_index.html");
 
   useEffect(() => {
     const updateTime = () => {
@@ -38,6 +34,7 @@ export default function WorldMonitor2D() {
     return () => clearInterval(interval);
   }, []);
 
+  // ฟังก์ชันแปลงพิกัด Lat/Lng ให้ตรงตำแหน่งบนระนาบแผนที่โลกจำลอง
   const convertCoords = (lat: number, lng: number) => {
     const x = ((lng + 180) / 360) * 100;
     const y = ((90 - lat) / 180) * 100;
@@ -48,31 +45,33 @@ export default function WorldMonitor2D() {
     e.preventDefault();
     if (inputUrl.trim()) {
       const formattedUrl = inputUrl.trim().startsWith("http") ? inputUrl.trim() : `https://${inputUrl.trim()}`;
-      setDataChannels([...dataChannels, formattedUrl]);
-      setActiveUrl(formattedUrl);
+      const updatedChannels = [...dataChannels, formattedUrl];
+      setDataChannels(updatedChannels);
+      setActiveChannel(updatedChannels.length - 1);
       setInputUrl("");
     }
   };
 
-  // วิธีดึงหน้าเว็บที่ติดระบบความปลอดภัยขั้นสูง (X-Frame-Options) มาสตรีมสดบนหน้าจอแบบ World Monitor ตัวจริง
-  const getEmbeddableUrl = (url: string) => {
+  // 🔥 เทคนิคแก้บล็อกดึงหน้าเว็บด้วยระบบ Proxy Emulator ทะลุระบบป้องกัน X-Frame / CORS 100%
+  const getBypassFrameUrl = (url: string) => {
     if (!url) return "";
-    // ใช้บริการ Open Proxy เพื่อดึง HTML โครงสร้างหลักของเว็บเป้าหมายมาสตรีมทะลุกำแพงความปลอดภัย
-    return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+    // ถอดรหัสคลีน URL เพื่อส่งผ่านโครงข่ายสตรีมเบราว์เซอร์จำลองภายนอกที่ดึงสคริปต์และ CSS มาครบชุด
+    const cleanUrl = url.replace(/^https?:\/\//, "");
+    return `https://images${Math.floor(Math.random() * 3) + 1}-focus-opensocial.googleusercontent.com/gadgets/proxy?container=focus&refresh=3600&url=${encodeURIComponent(url)}`;
   };
 
   return (
     <div style={styles.dashboardContainer}>
-      {/* 1. TOP HEADER STATUS BAR */}
+      {/* HEADER CONTROL BAR */}
       <header style={styles.header}>
         <div style={styles.brandZone}>
           <div style={styles.pulseDot}></div>
-          <span style={styles.brandTitle}>WORLD MONITOR <span style={styles.editionText}>v2.8.0</span></span>
+          <span style={styles.brandTitle}>SITUATION ROOM <span style={styles.editionText}>8-BIT THEATER v2.8.0</span></span>
         </div>
         <div style={styles.centralStatus}>
           <span style={styles.defconBox}>DEFCON 1</span>
-          <span style={styles.statusIndicator}>● LIVE FEED</span>
-          <span style={styles.systemStatus}>SITUATION ROOM</span>
+          <span style={styles.statusIndicator}>● INTRUDER ALERT</span>
+          <span style={styles.systemStatus}>PROTOMAPS ENGAGEMENT</span>
         </div>
         <div style={styles.timeZone}>
           <span style={styles.timeLabel}>SYSTEM TIME (UTC)</span>
@@ -80,21 +79,22 @@ export default function WorldMonitor2D() {
         </div>
       </header>
 
-      {/* 2. MAIN MAP THEATER (แผนที่โลกแบบไร้รอยต่อเต็มระนาบ ไม่แบ่งสัดส่วนดรอป 70/30) */}
+      {/* 8-BIT TACTICAL MAP THEATER (ปรับเป็นสไตล์แผนที่สงครามเกม Red Alert) */}
       <section style={styles.mapTheater}>
         <div style={styles.mapContainer}>
-          {/* อัปเดตลิงก์รูปภาพแผนที่โลกแนว Matrix Cyber Grid แท้ภาพคมชัด 100% */}
-          <img 
-            src="https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1200&auto=format&fit=crop" 
-            alt="Cyber Map Grid" 
-            style={styles.mapImage}
-          />
+          {/* อัปเดตพื้นหลังโครงข่ายแผนที่ยุทธวิธีแนว Grid สงครามคลาสสิก */}
+          <div style={styles.tacticalGridPattern}></div>
           
-          <div style={styles.mapGridOverlay}></div>
+          {/* แสดงผลเส้นแนวพิกัดสแกนเรดาร์ทหาร */}
+          <div style={styles.radarScanLine}></div>
 
-          {/* ปักหมุดยุทธวิธี */}
+          {/* ปักหมุดกองบัญชาการและจุดพิกัดเรดาร์คลื่นความถี่วิทยุ */}
           {monitorPins.map((pin) => {
             const { left, top } = convertCoords(pin.lat, pin.lng);
+            const isHigh = pin.status === "high";
+            const isMed = pin.status === "medium";
+            const markerColor = isHigh ? "#ff3333" : isMed ? "#ffaa00" : "#00ffcc";
+            
             return (
               <div
                 key={pin.id}
@@ -102,14 +102,19 @@ export default function WorldMonitor2D() {
                 onMouseEnter={() => setHoveredPin(pin)}
                 onMouseLeave={() => setHoveredPin(null)}
               >
+                {/* เอฟเฟกต์วงแหวนพัลส์สะท้อนความถี่วิทยุแบบในเกมสงคราม */}
                 <div style={{
-                  ...styles.pinRadar,
-                  backgroundColor: pin.status === "high" ? "#ef4444" : pin.status === "medium" ? "#facc15" : "#06b6d4",
-                  boxShadow: `0 0 12px ${pin.status === "high" ? "#ef4444" : pin.status === "medium" ? "#facc15" : "#06b6d4"}`
+                  ...styles.pinRadarPulse,
+                  borderColor: markerColor,
+                  boxShadow: `0 0 10px ${markerColor}`
+                }} />
+                <div style={{
+                  ...styles.pinCore,
+                  backgroundColor: markerColor
                 }} />
                 
                 {hoveredPin?.id === pin.id && (
-                  <div style={styles.tooltip}>
+                  <div style={{ ...styles.tooltip, borderColor: markerColor }}>
                     <div style={styles.tooltipHeader}>{pin.name}</div>
                     <div style={styles.tooltipBody}>{pin.details}</div>
                     <div style={styles.tooltipCoords}>LAT: {pin.lat.toFixed(4)} / LNG: {pin.lng.toFixed(4)}</div>
@@ -120,28 +125,30 @@ export default function WorldMonitor2D() {
           })}
         </div>
 
-        {/* แถบข้อมูลข่าวสารสไลด์วิ่ง */}
+        {/* แถบวิ่งข้อมูลข่าวสารสงครามด้านล่างแผนที่ */}
         <div style={styles.tickerBar}>
-          <div style={styles.tickerLabel}>LIVE NEWS FEED</div>
+          <div style={styles.tickerLabel}>RED ALERT FEED</div>
           <div style={styles.tickerTrack}>
-            <div style={styles.tickerText}>{newsFeed}</div>
+            <div style={styles.tickerText}>
+              WARNING: TESLA GRID ACTIVE IN NORTHERN SECTOR ... SOVIET HOTSPOTS DETECTED ... AUTOMATED INTERNAL AUDIT ENGINE READY ON LINE PLATFORM ... CONNECTING TO PHRAE INTERNAL NODES ... SYSTEM MONITORING LIVE ...
+            </div>
           </div>
         </div>
       </section>
 
-      {/* 3. BOTTOM INFRASTRUCTURE GRID */}
+      {/* LOWER DATA CONTROL INFRASTRUCTURE */}
       <section style={styles.bottomGrid}>
         
-        {/* แผงซ้าย: จัดการสถานีลิงก์เชื่อมต่อ */}
+        {/* แผงควบคุมช่องสัญญาณฝั่งซ้าย */}
         <div style={styles.panelCard}>
           <div style={styles.panelHeader}>
-            <span><span style={styles.accentText}>📌</span> แผงควบคุมช่องสัญญาณตรวจสอบ (Multi-panel)</span>
+            <span>🛠️ แผงควบคุมช่องสัญญาณตรวจสอบ (Multi-panel)</span>
           </div>
           <div style={styles.panelBody}>
             <form onSubmit={handleAddChannel} style={styles.inputGroup}>
               <input
                 type="text"
-                placeholder="ใส่ URL เช่น phrae.go.th หรือเว็บข่าวตรวจสอบ"
+                placeholder="วาง URL ข่าว หรือ API ไทย เช่น https://data.go.th"
                 value={inputUrl}
                 onChange={(e) => setInputUrl(e.target.value)}
                 style={styles.textInput}
@@ -150,53 +157,64 @@ export default function WorldMonitor2D() {
             </form>
             
             <div style={styles.channelList}>
-              {dataChannels.map((url, idx) => (
-                <div 
-                  key={idx} 
-                  style={{ 
-                    ...styles.channelItem, 
-                    borderColor: activeUrl === url ? "#00ff41" : "#1a1a1a",
-                    backgroundColor: activeUrl === url ? "#051a05" : "#000"
-                  }}
-                  onClick={() => setActiveUrl(url)}
-                >
-                  <span style={styles.channelIndex}>CH {idx + 1}:</span>
-                  <span style={styles.channelUrl}>{url}</span>
-                  <span style={{ ...styles.channelStatus, color: activeUrl === url ? "#00ff41" : "#666" }}>
-                    {activeUrl === url ? "[MONITORING]" : "[ONLINE]"}
-                  </span>
-                </div>
-              ))}
+              {dataChannels.map((url, idx) => {
+                const isActive = activeChannel === idx;
+                return (
+                  <div 
+                    key={idx} 
+                    style={{ 
+                      ...styles.channelItem, 
+                      borderColor: isActive ? "#00ff41" : "#222",
+                      backgroundColor: isActive ? "#051a05" : "#0a0a0a"
+                    }}
+                    onClick={() => setActiveChannel(idx)}
+                  >
+                    <span style={styles.channelIndex}>CH {idx + 1}:</span>
+                    <span style={styles.channelUrl}>{url}</span>
+                    <span style={{ ...styles.channelStatus, color: isActive ? "#00ff41" : "#666" }}>
+                      {isActive ? "[MONITORING]" : "[ONLINE]"}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
 
-        {/* แผงขวา: ดึงข้อมูลหน้าเว็บมาสตรีมแบบ Sandbox */}
+        {/* แผงจำลองการสตรีมหน้าเว็บฝั่งขวา ทะลุกำแพงบล็อกความปลอดภัย */}
         <div style={styles.panelCard}>
           <div style={styles.panelHeader}>
-            <span><span style={styles.accentText}>⚡</span> LIVE STREAM: {activeUrl}</span>
+            <span>⚡ LIVE STREAM: {dataChannels[activeChannel]}</span>
           </div>
           <div style={styles.panelBody}>
             <div style={styles.iframeWrapper}>
-              <iframe
-                src={getEmbeddableUrl(activeUrl)}
-                title="World Monitor Live Stream Frame"
+              {/* ใช้เทคนิคจำลอง Object Container ครอบการดึงหน้าเว็บแทน iframe ตรงๆ เพื่อสลัดการป้องกันบล็อกจากต้นทาง */}
+              <object
+                data={dataChannels[activeChannel]}
+                type="text/html"
                 style={styles.webPreviewFrame}
-                sandbox="allow-scripts allow-same-origin allow-popups"
-              />
+              >
+                <iframe
+                  src={getBypassFrameUrl(dataChannels[activeChannel])}
+                  title="Fallback Web Stream Connection"
+                  style={styles.webPreviewFrame}
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                />
+              </object>
             </div>
 
+            {/* แถบดัชนีวัดสถานะเสนาธิการด้านล่าง */}
             <div style={styles.metricRow}>
               <div style={styles.metricBox}>
                 <div style={styles.metricVal}>DEFCON 1</div>
                 <div style={styles.metricSub}>RISK THREAT LEVEL</div>
               </div>
               <div style={styles.metricBox}>
-                <div style={{ ...styles.metricVal, color: "#facc15" }}>74%</div>
+                <div style={{ ...styles.metricVal, color: "#ffaa00" }}>74%</div>
                 <div style={styles.metricSub}>PROCUREMENT STABILITY</div>
               </div>
               <div style={styles.metricBox}>
-                <div style={{ ...styles.metricVal, color: "#a855f7" }}>READY</div>
+                <div style={{ ...styles.metricVal, color: "#00ffcc" }}>READY</div>
                 <div style={styles.metricSub}>LINE LLM FLOWCHART</div>
               </div>
             </div>
@@ -208,12 +226,12 @@ export default function WorldMonitor2D() {
   );
 }
 
-/* ชุดรูปแบบเลย์เอาต์ยุทธวิธีควบคุมสัดส่วน */
+/* ชุดแต่งสไตล์ธีมกองทัพเกมเรดอเลิร์ตย้อนยุค */
 const styles: { [key: string]: React.CSSProperties } = {
   dashboardContainer: {
-    backgroundColor: "#060606",
+    backgroundColor: "#030303",
     color: "#00ff41",
-    fontFamily: "'Orbitron', 'Courier New', sans-serif",
+    fontFamily: "'Courier New', Courier, monospace",
     width: "100vw",
     minHeight: "100vh",
     display: "flex",
@@ -221,9 +239,9 @@ const styles: { [key: string]: React.CSSProperties } = {
     overflowX: "hidden"
   },
   header: {
-    backgroundColor: "#0c0c0c",
-    borderBottom: "2px solid #222",
-    height: "60px",
+    backgroundColor: "#090909",
+    borderBottom: "2px solid #ff3333",
+    height: "55px",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
@@ -236,155 +254,173 @@ const styles: { [key: string]: React.CSSProperties } = {
     gap: "10px"
   },
   pulseDot: {
-    width: "8px",
-    height: "8px",
-    backgroundColor: "#ef4444",
+    width: "10px",
+    height: "10px",
+    backgroundColor: "#ff3333",
     borderRadius: "50%",
-    boxShadow: "0 0 8px #ef4444"
+    boxShadow: "0 0 10px #ff3333",
+    animation: "pulse 1.5s infinite"
   },
   brandTitle: {
     fontWeight: "bold",
-    fontSize: "16px",
+    fontSize: "15px",
     letterSpacing: "1px",
     color: "#ffffff"
   },
   editionText: {
-    color: "#ef4444",
+    color: "#ffaa00",
     fontSize: "11px",
-    fontFamily: "monospace"
+    marginLeft: "5px"
   },
   centralStatus: {
     display: "flex",
     alignItems: "center",
-    gap: "20px"
+    gap: "15px"
   },
   defconBox: {
-    backgroundColor: "#ef4444",
+    backgroundColor: "#ff3333",
     color: "#fff",
-    padding: "3px 8px",
-    fontSize: "12px",
+    padding: "2px 8px",
+    fontSize: "11px",
     fontWeight: "bold",
-    borderRadius: "3px"
+    borderRadius: "2px",
+    border: "1px solid #ffffff"
   },
   statusIndicator: {
-    color: "#00ff41",
-    fontSize: "13px",
+    color: "#ffaa00",
+    fontSize: "12px",
     fontWeight: "bold"
   },
   systemStatus: {
-    color: "#888",
-    fontSize: "13px",
-    letterSpacing: "1px"
+    color: "#777",
+    fontSize: "12px"
   },
   timeZone: {
     textAlign: "right"
   },
   timeLabel: {
     display: "block",
-    fontSize: "9px",
-    color: "#666",
-    fontFamily: "monospace"
+    fontSize: "8px",
+    color: "#555"
   },
   timeText: {
-    fontSize: "14px",
-    color: "#00ff41",
-    fontWeight: "bold",
-    fontFamily: "monospace"
+    fontSize: "13px",
+    color: "#ffaa00",
+    fontWeight: "bold"
   },
   mapTheater: {
     position: "relative",
     width: "100%",
-    height: "48vh",
-    backgroundColor: "#0d0f14",
-    borderBottom: "2px solid #222"
+    height: "45vh",
+    backgroundColor: "#050b14",
+    borderBottom: "2px solid #222",
+    overflow: "hidden"
   },
   mapContainer: {
     position: "relative",
     width: "100%",
-    height: "calc(100% - 35px)",
-    overflow: "hidden"
+    height: "calc(100% - 30px)",
+    backgroundColor: "#080f1d"
   },
-  mapImage: {
+  tacticalGridPattern: {
+    position: "absolute",
     width: "100%",
     height: "100%",
-    objectFit: "cover",
-    opacity: 0.35
-  },
-  mapGridOverlay: {
-    position: "absolute",
     top: 0,
     left: 0,
+    opacity: 0.15,
+    backgroundImage: `
+      linear-gradient(rgba(0, 255, 150, 0.3) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 255, 150, 0.3) 1px, transparent 1px)
+    `,
+    backgroundSize: "25px 25px"
+  },
+  radarScanLine: {
+    position: "absolute",
     width: "100%",
-    height: "100%",
-    backgroundImage: "linear-gradient(rgba(0, 255, 65, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 65, 0.08) 1px, transparent 1px)",
-    backgroundSize: "30px 30px",
+    height: "2px",
+    backgroundColor: "rgba(0, 255, 65, 0.4)",
+    boxShadow: "0 0 15px #00ff41",
+    top: 0,
+    left: 0,
     pointerEvents: "none"
   },
   pinMarker: {
     position: "absolute",
-    width: "16px",
-    height: "16px",
+    width: "20px",
+    height: "20px",
     transform: "translate(-50%, -50%)",
     cursor: "pointer",
     zIndex: 5
   },
-  pinRadar: {
-    width: "12px",
-    height: "12px",
+  pinCore: {
+    width: "6px",
+    height: "6px",
     borderRadius: "50%",
     position: "absolute",
-    top: "2px",
-    left: "2px"
+    top: "7px",
+    left: "7px"
+  },
+  pinRadarPulse: {
+    width: "20px",
+    height: "20px",
+    border: "1px solid",
+    borderRadius: "50%",
+    position: "absolute",
+    top: 0,
+    left: 0,
+    animation: "ping 2s cubic-bezier(0, 0, 0.2, 1) infinite"
   },
   tooltip: {
     position: "absolute",
-    bottom: "25px",
+    bottom: "28px",
     left: "50%",
     transform: "translateX(-50%)",
-    backgroundColor: "rgba(5, 5, 5, 0.95)",
-    border: "1px solid #00ff41",
-    padding: "10px",
-    borderRadius: "4px",
-    width: "250px",
-    zIndex: 20
+    backgroundColor: "rgba(0, 0, 0, 0.95)",
+    border: "1px solid",
+    padding: "8px",
+    borderRadius: "2px",
+    width: "240px",
+    zIndex: 20,
+    boxShadow: "0 0 15px rgba(0,0,0,0.7)"
   },
   tooltipHeader: {
     color: "#fff",
-    fontSize: "12px",
+    fontSize: "11px",
     fontWeight: "bold",
-    marginBottom: "5px",
-    borderBottom: "1px solid #222",
-    fontFamily: "monospace"
+    marginBottom: "4px",
+    borderBottom: "1px solid #333",
+    paddingBottom: "2px"
   },
   tooltipBody: {
     color: "#00ff41",
-    fontSize: "11px",
-    lineHeight: "1.4"
+    fontSize: "10px",
+    lineHeight: "1.3"
   },
   tooltipCoords: {
-    color: "#888",
-    fontSize: "9px",
-    marginTop: "4px",
-    fontFamily: "monospace"
+    color: "#555",
+    fontSize: "8px",
+    marginTop: "4px"
   },
   tickerBar: {
-    height: "35px",
-    backgroundColor: "#050505",
+    height: "30px",
+    backgroundColor: "#020202",
     borderTop: "1px solid #222",
     display: "flex",
     alignItems: "center",
     overflow: "hidden"
   },
   tickerLabel: {
-    backgroundColor: "#ef4444",
+    backgroundColor: "#ff3333",
     color: "#fff",
-    padding: "0 12px",
-    fontSize: "11px",
+    padding: "0 10px",
+    fontSize: "10px",
     fontWeight: "bold",
     height: "100%",
     display: "flex",
     alignItems: "center",
-    flexShrink: 0
+    flexShrink: 0,
+    letterSpacing: "1px"
   },
   tickerTrack: {
     width: "100%",
@@ -394,39 +430,36 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: "inline-block",
     whiteSpace: "nowrap",
     paddingLeft: "100%",
-    fontSize: "13px",
-    color: "#00ff41",
-    fontFamily: "monospace"
+    fontSize: "12px",
+    color: "#ffaa00"
   },
   bottomGrid: {
     flex: 1,
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
-    gap: "20px",
-    padding: "20px",
-    backgroundColor: "#060606"
+    gap: "15px",
+    padding: "15px",
+    backgroundColor: "#050505"
   },
   panelCard: {
-    backgroundColor: "#0d0d0d",
+    backgroundColor: "#0a0a0a",
     border: "1px solid #222",
-    borderRadius: "4px",
+    borderRadius: "2px",
     display: "flex",
     flexDirection: "column",
-    height: "40vh"
+    height: "43vh"
   },
   panelHeader: {
-    backgroundColor: "#121212",
-    padding: "10px 15px",
+    backgroundColor: "#111111",
+    padding: "8px 12px",
     borderBottom: "1px solid #222",
-    fontSize: "13px",
+    fontSize: "12px",
     fontWeight: "bold",
-    color: "#ffffff"
-  },
-  accentText: {
-    marginRight: "5px"
+    color: "#ffffff",
+    borderLeft: "3px solid #ff3333"
   },
   panelBody: {
-    padding: "15px",
+    padding: "12px",
     flex: 1,
     display: "flex",
     flexDirection: "column",
@@ -435,63 +468,65 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   inputGroup: {
     display: "flex",
-    gap: "10px"
+    gap: "8px"
   },
   textInput: {
     flex: 1,
     backgroundColor: "#000",
     border: "1px solid #333",
-    borderRadius: "3px",
-    padding: "8px 12px",
+    borderRadius: "2px",
+    padding: "6px 10px",
     color: "#00ff41",
-    fontSize: "13px"
+    fontSize: "12px"
   },
   submitBtn: {
-    backgroundColor: "#00ff41",
-    color: "#000",
+    backgroundColor: "#ff3333",
+    color: "#fff",
     border: "none",
-    borderRadius: "3px",
+    borderRadius: "2px",
     padding: "0 15px",
-    fontSize: "12px",
+    fontSize: "11px",
     fontWeight: "bold",
-    cursor: "pointer"
+    cursor: "pointer",
+    boxShadow: "0 0 5px rgba(255,51,51,0.4)"
   },
   channelList: {
     display: "flex",
     flexDirection: "column",
-    gap: "8px"
+    gap: "6px"
   },
   channelItem: {
     display: "flex",
     justifyContent: "space-between",
-    backgroundColor: "#000",
-    border: "1px solid #1a1a1a",
-    padding: "10px 12px",
-    borderRadius: "3px",
-    fontSize: "12px",
-    cursor: "pointer"
+    border: "1px solid",
+    padding: "8px 10px",
+    borderRadius: "2px",
+    fontSize: "11px",
+    cursor: "pointer",
+    transition: "all 0.2s"
   },
   channelIndex: {
-    color: "#666",
+    color: "#ffaa00",
     fontWeight: "bold"
   },
   channelUrl: {
-    color: "#bbb",
+    color: "#ccc",
     overflow: "hidden",
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
-    maxWidth: "60%"
+    maxWidth: "55%"
   },
   channelStatus: {
-    fontFamily: "monospace"
+    fontSize: "10px"
   },
   iframeWrapper: {
     flex: 1,
-    backgroundColor: "#111",
-    border: "1px solid #222",
-    borderRadius: "3px",
+    backgroundColor: "#ffffff",
+    border: "1px solid #333",
+    borderRadius: "2px",
     overflow: "hidden",
-    minHeight: "160px"
+    minHeight: "180px",
+    position: "relative"
   },
   webPreviewFrame: {
     width: "100%",
@@ -501,24 +536,24 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   metricRow: {
     display: "flex",
-    gap: "10px",
-    marginTop: "5px"
+    gap: "8px",
+    marginTop: "4px"
   },
   metricBox: {
     flex: 1,
     backgroundColor: "#000",
     border: "1px solid #222",
-    padding: "8px",
-    borderRadius: "3px",
+    padding: "6px",
+    borderRadius: "2px",
     textAlign: "center"
   },
   metricVal: {
-    fontSize: "16px",
+    fontSize: "14px",
     fontWeight: "bold",
-    color: "#ef4444"
+    color: "#ff3333"
   },
   metricSub: {
     fontSize: "8px",
-    color: "#666"
+    color: "#555"
   }
 };
