@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef } from "react";
 
-// โครงสร้างประเภทข้อมูลคลังเอกสารพัสดุสำหรับทำ Local RAG ค้นหาในเครื่อง
 interface ProcurementDoc {
   id: string;
   source: string;
@@ -17,10 +16,9 @@ export default function WorldMapComponent() {
   const [isAiLoading, setIsAiLoading] = useState(true);
   const [aiStatus, setAiStatus] = useState("⚡ INITIALIZING TERNARY ENGINE...");
   
-  // 📁 คลังเก็บเอกสารที่ใช้สืบค้นจับคู่เนื้อหา (Context Store)
   const procurementDatabase = useRef<ProcurementDoc[]>([]);
-  // 🧠 ตัวแปรเก็บ Pipeline สมอง AI ตัวจริง (Transformers.js Instance)
   const generator = useRef<any>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null); // ตัวจับตำแหน่งให้แชตเลื่อนลงล่างสุดอัตโนมัติ
 
   const [chatHistory, setChatHistory] = useState([
     {
@@ -35,18 +33,21 @@ export default function WorldMapComponent() {
     }
   ]);
 
-  // 1. ระบบติดตั้งและดึงสมอง AI เข้า RAM อัตโนมัติด้วย WebGPU / WASM
+  // เลื่อนหน้าต่างแชตลงมาล่างสุดเมื่อมีข้อความใหม่
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatHistory]);
+
+  // 1. ระบบติดตั้งและดึงสมอง AI
   useEffect(() => {
     const initLocalLLM = async () => {
       try {
         setAiStatus("⏳ DOWNLOADING TINY LLM (~320MB)...");
         
-        // 🛠️ โหลดฐานข้อมูล RAG เตรียมไว้ในหน่วยความจำบราวเซอร์
         const ragResponse = await fetch("/rag/dlc_procure.json");
         if (ragResponse.ok) {
           procurementDatabase.current = await ragResponse.json();
         } else {
-          // Fallback ข้อมูลกรณีที่ยังไม่ได้สร้างไฟล์ JSON แยกไว้ภายนอก
           procurementDatabase.current = [
             { id: "act-m4", source: "พ.ร.บ. จัดซื้อจัดจ้างฯ 2560", section: "มาตรา 4", content: "การจัดซื้อจัดจ้าง หมายความว่า การดำเนินการเพื่อให้ได้มาซึ่งพัสดุโดยการซื้อ จ้าง เช่า แลกเปลี่ยน... พัสดุ หมายความว่า สินค้า งานบริการ งานก่อสร้าง งานเช่า..." },
             { id: "reg-c22", source: "ระเบียบกระทรวงการคลังฯ 2560", section: "ข้อ 22", content: "การจัดซื้อจัดจ้างโดยวิธีเฉพาะเจาะจงที่มีวงเงินไม่เกิน 500,000 บาท ให้เจ้าหน้าที่จัดทำรายงานขอความเห็นชอบ..." },
@@ -55,12 +56,11 @@ export default function WorldMapComponent() {
           ];
         }
 
-        // 🧠 โหลดไลบรารีและดาวน์โหลดโมเดล Qwen2.5-0.5B มารันในเครื่องพี่จริง
         const { pipeline } = await import("@huggingface/transformers");
         
         generator.current = await pipeline('text-generation', 'onnx-community/Qwen2.5-0.5B-Instruct-ONNX', {
-          device: 'webgpu', // สั่งรันบนการ์ดจอผ่าน WebGPU เพื่อความเร็วระดับมิลลิวินาที
-          dtype: 'q4',     // บีบอัดน้ำหนักสมอง 4-bit เพื่อจำกัดขนาดไม่เกิน 350MB ตามเป้าหมาย
+          device: 'webgpu',
+          dtype: 'q4',
         });
 
         setAiStatus("🟢 LOCAL AI READY (WEB-GPU)");
@@ -81,7 +81,7 @@ export default function WorldMapComponent() {
     initLocalLLM();
   }, []);
 
-  // 2. ฟังก์ชันอัปเดตเวลาระบบเรียลไทม์ (UTC)
+  // 2. ระบบเวลาเรียลไทม์
   useEffect(() => {
     const timer = setInterval(() => {
       const now = new Date();
@@ -94,7 +94,7 @@ export default function WorldMapComponent() {
     return () => clearInterval(timer);
   }, []);
 
-  // 3. ฟังก์ชันการทำข้อสอบประมวลผล RAG และรันข้อความผ่าน AI สมองจริง
+  // 3. ฟังก์ชันประมวลผล RAG ถาม-ตอบ
   const handleSendMessage = async () => {
     if (!chatInput.trim() || isAiLoading) return;
 
@@ -102,7 +102,6 @@ export default function WorldMapComponent() {
     setChatHistory(prev => [...prev, { id: Date.now(), sender: "user", text: currentInput }]);
     setChatInput("");
 
-    // กรองค้นหาเอกสารที่มีคำค้นหาใกล้เคียงที่สุด (Local Semantic Filtering Concept)
     const matchedDocs = procurementDatabase.current.filter(doc => {
       const keywords = currentInput.toLowerCase().split(/[ ,]+/);
       return keywords.some(k => doc.content.toLowerCase().includes(k) || doc.section.toLowerCase().includes(k));
@@ -112,24 +111,21 @@ export default function WorldMapComponent() {
       let aiTextOutput = "";
 
       if (generator.current) {
-        // เทคนิคแบบ RAG: นำเนื้อหากฎหมายจริงที่ดึงจากหน่วยความจำมาเป็นข้อความแวดล้อมประกอบร่างเป็น Prompt
         const contextString = matchedDocs.length > 0 
           ? matchedDocs.map(d => `[อ้างอิง: ${d.source} ${d.section}] เนื้อหา: ${d.content}`).join("\n")
           : "ไม่มีอ้างอิงระเบียบโดยตรงในระบบ";
 
         const systemPrompt = `คุณคือระบบผู้ช่วยกฎหมายจัดซื้อจัดจ้างและพัสดุภาครัฐของไทย จงตอบคำถามอย่างเป็นทางการตามข้อเท็จจริง\nบริบทอ้างอิง:\n${contextString}\n\nคำถาม: ${currentInput}\nคำตอบ:`;
 
-        // สั่งให้สมองประมวลผลคำตอบจริงออกมาตามค่ากฎหมาย
         const output = await generator.current(systemPrompt, {
-          max_new_tokens: 150,
-          temperature: 0.1, // กำหนดค่านิ่งๆ ป้องกันโมเดลมโนคำตอบเอง
+          max_new_tokens: 200,
+          temperature: 0.1,
           do_sample: false
         });
 
         const fullResponse = output[0].generated_text;
         aiTextOutput = fullResponse.split("คำตอบ:")[1]?.trim() || "[LOCAL ENGINE] ประมวลผลลัพธ์สำเร็จ";
       } else {
-        // Fallback Logic สำรองหากรันโมเดลภายนอกไม่ผ่านบนเครื่องเก่า
         aiTextOutput = "[LOCAL ENGINE] ค้นพบคลังข้อความพัสดุ: ระบบจำลองการดึงข้อความใน RAM";
       }
 
@@ -150,7 +146,7 @@ export default function WorldMapComponent() {
       overflow: "hidden"
     }}>
       
-      {/* 1. TOP MONITOR NAVIGATION */}
+      {/* ================= 1. TOP BAR NAVBAR ================= */}
       <div style={{
         display: "flex",
         justifyContent: "space-between",
@@ -161,15 +157,12 @@ export default function WorldMapComponent() {
         height: "55px"
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <span style={{
-            fontWeight: "bold",
-            letterSpacing: "1px",
-            color: "#38bdf8",
-            fontSize: "16px"
-          }}>FIREFLY MONITOR <span style={{ color: "#94a3b8", fontSize: "12px" }}>v3.0.0</span></span>
+          <span style={{ fontWeight: "bold", letterSpacing: "1px", color: "#38bdf8", fontSize: "16px" }}>
+            FIREFLY MONITOR <span style={{ color: "#94a3b8", fontSize: "12px" }}>v3.0.0</span>
+          </span>
           <div style={{ display: "flex", gap: "4px" }}>
-            <button style={{ background: "#0ea5e9", color: "#fff", border: "none", padding: "4px 10px", borderRadius: "4px", fontSize: "12px", cursor: "pointer" }}>GLOBAL</button>
-            <button style={{ background: "#1e293b", color: "#94a3b8", border: "none", padding: "4px 10px", borderRadius: "4px", fontSize: "12px", cursor: "pointer" }}>REGIONAL</button>
+            <button style={{ background: "#0ea5e9", color: "#fff", border: "none", padding: "4px 10px", borderRadius: "4px", fontSize: "12px" }}>GLOBAL</button>
+            <button style={{ background: "#1e293b", color: "#94a3b8", border: "none", padding: "4px 10px", borderRadius: "4px", fontSize: "12px" }}>REGIONAL</button>
           </div>
           <div style={{ fontSize: "12px", background: isAiLoading ? "#1e293b" : "#065f46", color: "#fff", padding: "4px 10px", borderRadius: "4px", fontWeight: "bold" }}>
             {aiStatus}
@@ -184,154 +177,196 @@ export default function WorldMapComponent() {
         </div>
       </div>
 
-      {/* 2. MAIN HUB LAYOUT */}
-      <div style={{ display: "flex", flex: 1, position: "relative", overflow: "hidden" }}>
+      {/* ================= 2. MAIN SPLIT HUB WORKSPACE ================= */}
+      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
         
-        {/* เลเยอร์ฝั่งซ้าย: Layers Controller (คงเดิมตามฉบับของพี่) */}
-        <div style={{
-          width: "240px",
-          backgroundColor: "#0b101a",
-          borderRight: "1px solid #1e293b",
-          padding: "16px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "12px",
-          zIndex: 5
-        }}>
-          <h4 style={{ fontSize: "12px", color: "#94a3b8", letterSpacing: "0.5px", margin: 0 }}>GLOBAL SITUATION LAYERS</h4>
-          <input 
-            type="text" 
-            placeholder="Search layers..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ background: "#111827", border: "1px solid #334155", padding: "6px 10px", borderRadius: "4px", color: "#fff", fontSize: "12px" }}
-          />
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "13px", marginTop: "8px" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}><input type="checkbox" defaultChecked /> 🔴 THAI PROCUREMENT HOTSPOTS</label>
-            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}><input type="checkbox" defaultChecked /> 🟢 TESLA ENERGY GRID</label>
-            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}><input type="checkbox" defaultChecked /> 🔵 CONFLICT ZONES MANAGEMENT</label>
-            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}><input type="checkbox" /> 🟡 WEATHER CONTROL STATION</label>
-          </div>
+        {/* 🗺️ ฝั่งซ้าย (70%): แผนที่โลกยุทธวิธี และ แผงควบคุมเลเยอร์ด้านใน */}
+        <div style={{ width: "70%", display: "flex", position: "relative", borderRight: "1px solid #1e293b", height: "100%" }}>
           
-          <h4 style={{ fontSize: "11px", color: "#38bdf8", letterSpacing: "0.5px", marginTop: "15px", marginBottom: 0 }}>LOCAL RAM HARDWARE</h4>
-          <div style={{ background: "#111827", padding: "8px", borderRadius: "4px", fontSize: "11px", border: "1px solid #1e293b", color: "#94a3b8" }}>
-            • AI Brain Model: ~320 MB<br/>
-            • RAG Encrypted DB: ~125 MB
-          </div>
-        </div>
-
-        {/* เลเยอร์ตรงกลาง: แผนที่โลกยุทธวิธีและส่วนประมวลผลแชตจริง */}
-        <div style={{ flex: 1, position: "relative", background: "#05070c" }}>
-          
-          {/* แผนที่โลก 2D ยุทธวิธี */}
+          {/* แผงควบคุมเปิด-ปิดชั้นข้อมูลยุทธวิธีภายในฝั่งซ้าย */}
           <div style={{
-            width: "100%",
-            height: "100%",
-            backgroundImage: "url('/map_day.png.png')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            position: "absolute",
-            top: 0,
-            left: 0
+            width: "240px",
+            backgroundColor: "#0b101a",
+            borderRight: "1px solid #1e293b",
+            padding: "16px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "12px",
+            zIndex: 5
           }}>
+            <h4 style={{ fontSize: "11px", color: "#94a3b8", letterSpacing: "0.5px", margin: 0 }}>GLOBAL SITUATION LAYERS</h4>
+            <input 
+              type="text" 
+              placeholder="Search layers..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ background: "#111827", border: "1px solid #334155", padding: "6px 10px", borderRadius: "4px", color: "#fff", fontSize: "12px" }}
+            />
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "12px", marginTop: "8px" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}><input type="checkbox" defaultChecked /> 🔴 THAI PROCUREMENT HOTSPOTS</label>
+              <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}><input type="checkbox" defaultChecked /> 🟢 TESLA ENERGY GRID</label>
+              <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}><input type="checkbox" defaultChecked /> 🔵 CONFLICT ZONES</label>
+              <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}><input type="checkbox" /> 🟡 WEATHER STATION</label>
+            </div>
             
-            {/* ชั้นหน้ากากแบ่งฟากมืด/ฟากสว่าง (Night Timezone Shadow Overlay) */}
+            <h4 style={{ fontSize: "11px", color: "#38bdf8", letterSpacing: "0.5px", marginTop: "15px", marginBottom: 0 }}>LOCAL RAM HARDWARE</h4>
+            <div style={{ background: "#111827", padding: "8px", borderRadius: "4px", fontSize: "11px", border: "1px solid #1e293b", color: "#94a3b8" }}>
+              • AI Brain Model: ~320 MB<br/>
+              • RAG Encrypted DB: ~125 MB
+            </div>
+          </div>
+
+          {/* กล่องแสดงแผนที่โลก (ขยายเต็มพื้นที่ที่เหลือของฝั่ง 70%) */}
+          <div style={{ flex: 1, position: "relative", background: "#05070c" }}>
             <div style={{
+              width: "100%",
+              height: "100%",
+              backgroundImage: "url('/map_day.png.png')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
               position: "absolute",
               top: 0,
-              right: 0,
-              width: "45%",
-              height: "100%",
-              background: "linear-gradient(90deg, rgba(5,7,12,0) 0%, rgba(5,7,12,0.75) 20%, rgba(5,7,12,0.85) 100%)",
-              mixBlendMode: "multiply",
-              pointerEvents: "none"
-            }} />
+              left: 0
+            }}>
+              {/* ชั้นหน้ากากแบ่งฟากมืด/ฟากสว่าง */}
+              <div style={{
+                position: "absolute",
+                top: 0,
+                right: 0,
+                width: "45%",
+                height: "100%",
+                background: "linear-gradient(90deg, rgba(5,7,12,0) 0%, rgba(5,7,12,0.75) 20%, rgba(5,7,12,0.85) 100%)",
+                mixBlendMode: "multiply",
+                pointerEvents: "none"
+              }} />
 
-            {/* จุดพิกัดเรดาร์แจ้งเตือน */}
-            <div className="radar-ping" style={{ position: "absolute", left: "73%", top: "42%", width: "12px", height: "12px", background: "#ef4444", borderRadius: "50%", boxShadow: "0 0 10px #ef4444" }} title="Phrae Hub" />
-            <div className="radar-ping" style={{ position: "absolute", left: "52%", top: "28%", width: "10px", height: "10px", background: "#38bdf8", borderRadius: "50%", boxShadow: "0 0 10px #38bdf8" }} title="Moscow Server" />
-            <div className="radar-ping" style={{ position: "absolute", left: "25%", top: "35%", width: "10px", height: "10px", background: "#eab308", borderRadius: "50%", boxShadow: "0 0 10px #eab308" }} title="US Gateway" />
+              {/* จุดพิกัดเรดาร์แจ้งเตือน */}
+              <div className="radar-ping" style={{ position: "absolute", left: "73%", top: "42%", width: "12px", height: "12px", background: "#ef4444", borderRadius: "50%", boxShadow: "0 0 10px #ef4444" }} title="Phrae Hub" />
+              <div className="radar-ping" style={{ position: "absolute", left: "52%", top: "28%", width: "10px", height: "10px", background: "#38bdf8", borderRadius: "50%", boxShadow: "0 0 10px #38bdf8" }} title="Moscow Server" />
+              <div className="radar-ping" style={{ position: "absolute", left: "25%", top: "35%", width: "10px", height: "10px", background: "#eab308", borderRadius: "50%", boxShadow: "0 0 10px #eab308" }} title="US Gateway" />
+            </div>
           </div>
 
-          {/* แผงข้อมูลลอยคู่ (Floating Panels) ด้านล่างสุด */}
-          <div style={{
-            position: "absolute",
-            bottom: "16px",
-            left: "16px",
-            right: "16px",
-            height: "230px",
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "16px",
-            zIndex: 10
+        </div>
+
+        {/* 🤖 ฝั่งขวา (30%): ศูนย์ควบคุมและแชตโต้ตอบยาวเต็มจอ ย้ายมาด้านข้างเลื่อนเมาส์ขยับได้อิสระ */}
+        <div style={{ 
+          width: "30%", 
+          backgroundColor: "#0b101a", 
+          display: "flex", 
+          flexDirection: "column", 
+          height: "100%",
+          padding: "12px"
+        }}>
+          
+          {/* ส่วนบน: แผง Live Intelligence Feed (ข่าวสารระบบ) */}
+          <div style={{ 
+            height: "180px", 
+            backgroundColor: "rgba(13, 19, 31, 0.92)", 
+            border: "1px solid #1e293b", 
+            borderRadius: "6px", 
+            padding: "12px", 
+            display: "flex", 
+            flexDirection: "column",
+            marginBottom: "12px"
           }}>
+            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #334155", paddingBottom: "6px", marginBottom: "6px" }}>
+              <span style={{ fontSize: "11px", fontWeight: "bold", color: "#ef4444" }}>🔴 LIVE INTELLIGENCE FEED</span>
+            </div>
+            <div style={{ flex: 1, overflowY: "auto", fontSize: "11.5px", color: "#94a3b8", lineHeight: "1.5" }}>
+              <p style={{ margin: "2px 0" }}>• [ระบบพัสดุ] ดึงข้อมูลคลัง พรบ. ระเบียบพัสดุ 2560 เข้าสู่ RAM เรียบร้อย</p>
+              <p style={{ margin: "2px 0", color: "#38bdf8" }}>• [ระบบปลอดภัย] สถาปัตยกรรมทำงานแบบออฟไลน์แยกตัว 100%</p>
+              <p style={{ margin: "2px 0" }}>• [Local Engine] เรียกใช้คำสั่งแกนประมวลผล WebGPU สำเร็จ</p>
+            </div>
+          </div>
+
+          {/* ส่วนล่าง: หน้าต่างแชตยาวเต็มพื้นที่ที่เหลือ สามารถเลื่อน (Scroll) ขยับดูซ้ายขวาบนล่างได้ */}
+          <div style={{ 
+            flex: 1, 
+            backgroundColor: "rgba(11, 16, 26, 0.96)", 
+            border: "1px solid #1e293b", 
+            borderRadius: "6px", 
+            padding: "12px", 
+            display: "flex", 
+            flexDirection: "column",
+            overflow: "hidden"
+          }}>
+            <div style={{ borderBottom: "1px solid #334155", paddingBottom: "6px", marginBottom: "8px", fontSize: "12px", fontWeight: "bold", color: "#38bdf8" }}>
+              LOCAL TERNARY COMMAND LINE
+            </div>
             
-            {/* แผง Live Intelligence Feed ข่าวสารสถานการณ์สด */}
-            <div style={{ backgroundColor: "rgba(13, 19, 31, 0.92)", border: "1px solid #1e293b", borderRadius: "6px", padding: "12px", display: "flex", flexDirection: "column" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #334155", paddingBottom: "6px", marginBottom: "8px" }}>
-                <span style={{ fontSize: "12px", fontWeight: "bold", color: "#ef4444" }}>🔴 LIVE INTELLIGENCE FEED</span>
-                <span style={{ fontSize: "11px", color: "#64748b" }}>IN-MEMORY STORAGE STATUS</span>
-              </div>
-              <div style={{ flex: 1, overflowY: "auto", fontSize: "12.5px", color: "#94a3b8", lineHeight: "1.6" }}>
-                <p style={{ margin: "4px 0" }}>• [ระบบพัสดุ] ดึงข้อมูลคลัง พรบ. ระเบียบพัสดุ 2560 และหนังสือเวียนเข้าสู่หน่วยความจำความเร็วสูงใน RAM เรียบร้อย</p>
-                <p style={{ margin: "4px 0", color: "#38bdf8" }}>• [ความปลอดภัยทางไซเบอร์] สถาปัตยกรรมระบบเป็นแบบตัดเน็ตทำงานออฟไลน์ แยกตัวจาก Cloud สาธารณะภายนอก 100%</p>
-                <p style={{ margin: "4px 0" }}>• [Local Engine] ตรวจสอบโครงข่าย WebGPU พร้อมเรียกใช้ชุดคำสั่งแกนประมวลผลขนาดจิ๋วในการตอบคำถาม</p>
-              </div>
+            {/* รายการแชต: เปิดสิทธิ์ให้ Scroll เลื่อนขึ้นลงดูประวัติได้อย่างอิสระ */}
+            <div style={{ 
+              flex: 1, 
+              overflowY: "auto", 
+              overflowX: "hidden", 
+              display: "flex", 
+              flexDirection: "column", 
+              gap: "8px", 
+              paddingBottom: "8px"
+            }}>
+              {chatHistory.map((msg) => (
+                <div key={msg.id} style={{
+                  fontSize: "12.5px",
+                  padding: "8px 10px",
+                  borderRadius: "4px",
+                  maxWidth: "95%",
+                  wordBreak: "break-word",
+                  whiteSpace: "pre-wrap",
+                  alignSelf: msg.sender === "user" ? "flex-end" : "flex-start",
+                  backgroundColor: msg.sender === "user" ? "#1e1b4b" : "#1e293b",
+                  borderLeft: msg.sender === "user" ? "none" : "2px solid #38bdf8",
+                  borderRight: msg.sender === "user" ? "2px solid #818cf8" : "none",
+                }}>
+                  {msg.text}
+                </div>
+              ))}
+              <div ref={chatEndRef} />
             </div>
 
-            {/* แผงหน้าต่างสนทนา Local RAG สมองกลแท้ */}
-            <div style={{ backgroundColor: "rgba(11, 16, 26, 0.96)", border: "1px solid #1e293b", borderRadius: "6px", padding: "12px", display: "flex", flexDirection: "column" }}>
-              <div style={{ borderBottom: "1px solid #334155", paddingBottom: "6px", marginBottom: "8px", fontSize: "12px", fontWeight: "bold", color: "#38bdf8" }}>
-                LOCAL TERNARY COMMAND LINE
-              </div>
-              
-              {/* ส่วนแสดงประวัติแชต */}
-              <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "8px", paddingBottom: "8px" }}>
-                {chatHistory.map((msg) => (
-                  <div key={msg.id} style={{
-                    fontSize: "12.5px",
-                    padding: "6px 10px",
-                    borderRadius: "4px",
-                    maxWidth: "90%",
-                    whiteSpace: "pre-wrap",
-                    alignSelf: msg.sender === "user" ? "flex-end" : "flex-start",
-                    backgroundColor: msg.sender === "user" ? "#1e1b4b" : "#1e293b",
-                    borderLeft: msg.sender === "user" ? "none" : "2px solid #38bdf8",
-                    borderRight: msg.sender === "user" ? "2px solid #818cf8" : "none",
-                  }}>
-                    {msg.text}
-                  </div>
-                ))}
-              </div>
-
-              {/* ช่องป้อนข้อความ */}
-              <div style={{ display: "flex", gap: "8px" }}>
-                <input 
-                  type="text" 
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                  disabled={isAiLoading}
-                  placeholder={isAiLoading ? "กรุณารอโหลดคลังสมอง AI สักครู่..." : "พิมพ์ถามคำถามกฎหมายพัสดุ (เช่น เฉพาะเจาะจง, ค่าปรับ)..."} 
-                  style={{ flex: 1, background: "#070a0f", border: "1px solid #334155", borderRadius: "4px", padding: "8px 10px", color: "#fff", fontSize: "13px", outline: "none" }}
-                />
-                <button 
-                  onClick={handleSendMessage} 
-                  disabled={isAiLoading}
-                  style={{ background: isAiLoading ? "#334155" : "#38bdf8", color: "#0f172a", border: "none", padding: "0 16px", borderRadius: "4px", fontWeight: "bold", fontSize: "12px", cursor: "pointer" }}
-                >
-                  SEND
-                </button>
-              </div>
+            {/* ส่วนควบคุมช่องสำหรับกรอกคำสั่งพิมพ์ข้อความคุยกับ AI */}
+            <div style={{ display: "flex", gap: "8px", marginTop: "8px", paddingTop: "8px", borderTop: "1px solid #233149" }}>
+              <input 
+                type="text" 
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                disabled={isAiLoading}
+                placeholder={isAiLoading ? "กรุณารอระบบสักครู่..." : "พิมพ์ถามเงื่อนไขกฎหมายพัสดุตรงนี้ได้เลย..."} 
+                style={{ 
+                  flex: 1, 
+                  background: "#070a0f", 
+                  border: "1px solid #334155", 
+                  borderRadius: "4px", 
+                  padding: "8px 10px", 
+                  color: "#fff", 
+                  fontSize: "13px", 
+                  outline: "none" 
+                }}
+              />
+              <button 
+                onClick={handleSendMessage} 
+                disabled={isAiLoading}
+                style={{ 
+                  background: isAiLoading ? "#334155" : "#38bdf8", 
+                  color: "#0f172a", 
+                  border: "none", 
+                  padding: "0 16px", 
+                  borderRadius: "4px", 
+                  fontWeight: "bold", 
+                  fontSize: "12px", 
+                  cursor: "pointer" 
+                }}
+              >
+                SEND
+              </button>
             </div>
-
           </div>
 
         </div>
 
       </div>
 
-      {/* อนิเมชั่นไฟสัญญาณเรดาร์กระพริบ */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes pulse {
           0% { transform: scale(0.9); opacity: 0.8; }
