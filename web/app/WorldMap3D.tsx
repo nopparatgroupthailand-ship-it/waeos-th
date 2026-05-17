@@ -2,195 +2,171 @@
 
 import React, { useState, useEffect } from "react";
 
-// พิกัดโหนดสัญญาณยุทธวิธี (กำหนดค่า Lat/Lon จริงเพื่อใช้คำนวณตำแหน่งพิกเซล)
-const tacticalNodes = [
-  { id: 1, lat: 18.1446, lng: 100.1403, color: "#00ff66", label: "สถานะ: ไทย (PHRAE HQ)", country: "TH" },
-  { id: 2, lat: 55.7558, lng: 37.6173, color: "#ff3333", label: "MOSCOW OUTPOST (PRIMARY BASE)", country: "RU" },
-  { id: 3, lat: 38.9072, lng: -77.0369, color: "#00f0ff", label: "VERCEL EAST NODE", country: "US" },
-  { id: 4, lat: 35.6762, lng: 139.6503, color: "#ffaa00", label: "TOKYO RADAR", country: "JP" }
+// พิกัดยุทธศาสตร์โลก (Lat/Lng ตรงตามแผนที่สากล)
+const strategicNodes = [
+  { id: 1, lat: 18.1446, lng: 100.1403, color: "#00ff66", label: "PHRAE HQ (THAILAND)", country: "TH" },
+  { id: 2, lat: 55.7558, lng: 37.6173, color: "#ff3333", label: "MOSCOW OUTPOST", country: "RU" },
+  { id: 3, lat: 40.7128, lng: -74.0060, color: "#00f0ff", label: "NEW YORK NODE", country: "US" },
+  { id: 4, lat: -33.8688, lng: 151.2093, color: "#ffaa00", label: "SYDNEY RADAR", country: "AU" }
 ];
 
-export default function WorldMapTacticalV2() {
-  const [currentTime, setCurrentTime] = useState<string>("");
-  const [isNight, setIsNight] = useState<boolean>(false);
-  const [zoomLevel, setZoomLevel] = useState<number>(1); // 1 = ปกติ, >1 = ซูมเข้า
-  const [activeCountry, setActiveCountry] = useState<string>("GLOBAL");
+export default function WorldMapCanvasTheater() {
+  const [currentTimeStr, setCurrentTimeStr] = useState<string>("");
+  const [utcHour, setUtcHour] = useState<number>(12); // เก็บค่าชั่วโมง UTC ปัจจุบันเพื่อคำนวณเงา
+  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
 
-  // 🕒 1. ระบบควบคุมเวลาและสลับสกินภาพกลางวัน-กลางคืนอัตโนมัติ (Local Time-Based)
+  // 🕒 1. ดักจับเวลาโลก (UTC) แบบ Real-time เพื่อคำนวณตำแหน่งดวงอาทิตย์
   useEffect(() => {
-    const updateTheater = () => {
+    const updateGlobalClock = () => {
       const now = new Date();
-      setCurrentTime(now.toUTCString().replace("GMT", "UTC"));
-
-      // 🕒 ตรวจสอบเวลาเครื่อง: เกิน 18:00 หรือก่อน 06:00 จะปรับเป็น Night Mode เปิดไฟเมืองออโต้
-      const currentHour = now.getHours();
-      setIsNight(currentHour >= 18 || currentHour < 6);
+      // แสดงฟอร์แมตเวลาบนจอแบบทหาร
+      setCurrentTimeStr(now.toUTCString().replace("GMT", "UTC"));
+      // ใช้เวลา UTC ในการคำนวณตำแหน่งความมืด-สว่างของโลก
+      setUtcHour(now.getUTCHours() + now.getUTCMinutes() / 60);
     };
 
-    updateTheater();
-    const interval = setInterval(updateTheater, 1000);
+    updateGlobalClock();
+    const interval = setInterval(updateGlobalClock, 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // 🔎 2. ฟังก์ชันควบคุมการซูมยุทธวิธี (Tactical Zoom)
-  const handleZoom = (direction: "in" | "out") => {
-    if (direction === "in" && zoomLevel < 2.5) setZoomLevel((prev) => prev + 0.3);
-    if (direction === "out" && zoomLevel > 1) setZoomLevel((prev) => prev - 0.3);
-  };
-
-  // 🗺️ 3. สูตรแปลงพิกัดทางภูมิศาสตร์ (Lat/Lon) ให้ลงตำแหน่งบนแผนที่พิกเซลพอดี
+  // 🗺️ 2. สูตรคณิตศาสตร์แปลงค่าภูมิศาสตร์ (Lat/Lng) ไปเป็นเปอร์เซ็นต์บนหน้าจอพิกเซล
   const convertGeoToPercent = (lat: number, lng: number) => {
-    // ปรับสัดส่วนตามมาตรฐาน Equirectangular Projection ให้เข้ากับภาพ Base Map
+    // ปรับชดเชยระยะขอบของภาพพิกเซลเพื่อให้จุดปักตรงประเทศพอดี
     const x = ((lng + 180) / 360) * 100;
     const y = ((90 - lat) / 180) * 100;
     return { left: `${x}%`, top: `${y}%` };
   };
 
+  // 🌌 3. คำนวณหาตำแหน่ง "ม่านเงากลางคืน" วิ่งจากขวาไปซ้ายตามเวลาหมุนของโลก
+  // เที่ยงคืน UTC (00:00) เงาหนาจะอยู่ตรงกลางแผนที่พอดี (0 องศา)
+  const shadowOffset = (utcHour / 24) * 100;
+
   return (
     <div style={styles.dashboardContainer}>
-      
-      {/* HEADER CONTROL BAR */}
+      {/* HUD CONTROL BAR */}
       <header style={styles.header}>
         <div style={styles.brandZone}>
           <div style={styles.pulseDot}></div>
-          <span style={styles.brandTitle}>
-            SITUATION ROOM <span style={styles.editionText}>8-BIT THEATER V2.8.5</span>
-          </span>
+          <span style={styles.brandTitle}>ENGAGEMENT THEATER <span style={styles.versionBadge}>v3.0 CYBERRADAR</span></span>
         </div>
-
-        {/* แผงควบคุมระบบแยกส่วนภูมิภาค (Sector Selector) */}
-        <div style={styles.regionSelector}>
-          <span style={{ color: "#556b82", marginRight: "5px", fontSize: "11px" }}>TACTICAL SECTOR:</span>
-          {["GLOBAL", "TH", "RU", "US"].map((sector) => (
-            <button
-              key={sector}
-              onClick={() => {
-                setActiveCountry(sector);
-                // ถ้าเลือกประเทศเจาะจง ให้ซูมเข้าไปอัตโนมัติเพื่อความตื่นตาตื่นใจ
-                if (sector !== "GLOBAL") setZoomLevel(1.6);
-                else setZoomLevel(1);
-              }}
-              style={{
-                ...styles.sectorBtn,
-                backgroundColor: activeCountry === sector ? "#ff3333" : "#0d121d",
-                color: activeCountry === sector ? "#fff" : "#7a8c9e",
-                borderColor: activeCountry === sector ? "#ff3333" : "#1a2333"
-              }}
-            >
-              {sector}
-            </button>
-          ))}
+        <div style={styles.statusDisplay}>
+          <span style={{ color: "#00ff66" }}>● GLOBAL TIME MONITOR ACTIVE</span>
         </div>
-
-        <div style={styles.timeZone}>
-          <span style={styles.timeLabel}>SYSTEM TIME (UTC)</span>
-          <span style={styles.timeText}>{currentTime || "00:00:00 UTC"}</span>
+        <div style={styles.clockZone}>
+          <span style={styles.clockLabel}>REALTIME UTC SYSTEM</span>
+          <span style={styles.clockText}>{currentTimeStr || "SYNCHRONIZING..."}</span>
         </div>
       </header>
 
-      {/* TACTICAL MAP MONITOR THEATER */}
+      {/* TACTICAL MAP AREA */}
       <section style={styles.mapTheater}>
-        
-        {/* แถบเครื่องมือซูมฝั่งขวา (Zoom UI Widget) */}
-        <div style={styles.zoomWidget}>
-          <button onClick={() => handleZoom("in")} style={styles.zoomBtn}>＋</button>
-          <div style={styles.zoomIndicator}>{Math.round(zoomLevel * 100)}%</div>
-          <button onClick={() => handleZoom("out")} style={styles.zoomBtn}>－</button>
-        </div>
-
-        {/* หน้าจอแสดงผลเลเยอร์แผนที่ซ้อนทับ */}
-        <div 
-          style={{ 
-            ...styles.mapViewWindow,
-            transform: `scale(${zoomLevel})`,
-            // ย้ายจุดศูนย์กลางซูมตามพิกัดภูมิภาคที่เลือก (ไทยจะเฉียงไปทางขวาแถวๆ เอเชีย)
-            transformOrigin: activeCountry === "TH" ? "76% 52%" : activeCountry === "RU" ? "60% 30%" : activeCountry === "US" ? "25% 40%" : "center center"
-          }}
-        >
-          {/* ☀️ เลเยอร์ล่าง: แผนที่โหมดกลางวัน (ลิงก์ตรงชื่อไฟล์ภาพ Red Alert 2 บน GitHub ของพี่) */}
+        <div style={styles.mapWrapper}>
+          
+          {/* Layer 1: ภาพ 8-bit พื้นหลังดั้งเดิมของพี่บน GitHub */}
           <img 
             src="/Gemini_Generated_Image_nvm58snvm58snvm5.png" 
-            alt="Tactical Map Day" 
-            style={styles.mapLayerBase} 
+            alt="Tactical 8Bit Background" 
+            style={styles.mapBackground}
           />
 
-          {/* 🌙 เลเยอร์บน: แผนที่โหมดกลางคืน (ไฟเมืองส้มระยิบระยับ/สปอตไลท์ทหาร) */}
-          <img 
-            src="/map_night.png" 
-            alt="Tactical Map Night" 
-            style={{ 
-              ...styles.mapLayerOverlay, 
-              opacity: isNight ? 1 : 0 // ค่อยๆ เฟดเข้าหากลางคืนอย่างนุ่มนวลตามเวลาจริง
-            }} 
+          {/* Layer 2: ม่านเงากลางคืนอัตโนมัติ (Dynamic Day/Night Overlay) */}
+          {/* ส่วนที่โดนเงาครอบทับ = กลางคืน | ส่วนที่โล่ง = กลางวัน */}
+          <div 
+            style={{
+              ...styles.nightShadowLayer,
+              background: `linear-gradient(90deg, 
+                rgba(5, 10, 25, 0.75) 0%, 
+                rgba(5, 10, 25, 0.4) 20%, 
+                rgba(0, 0, 0, 0) 40%, 
+                rgba(0, 0, 0, 0) 60%, 
+                rgba(5, 10, 25, 0.4) 80%, 
+                rgba(5, 10, 25, 0.75) 100%)`,
+              // ขยับเงาตามแกน X ของโลกเรียลไทม์ (หมุนตะวันออกไปตะวันตะวันตก)
+              transform: `translateX(calc(-50% + ${(shadowOffset + 50) % 100}%))`,
+            }}
           />
 
-          {/* ตะแกรงเลเซอร์ดิจิทัล (Scanlines & Grid Overlay เพิ่มฟีลลิ่งหน้าจอคอมพิวเตอร์ทหาร) */}
+          {/* Layer 3: แผ่นกริดเลเซอร์บางๆ พาดผ่านจอคอมพิวเตอร์ทหาร */}
           <div style={styles.gridOverlay} />
 
-          {/* ระบบพิกัดดวงไฟเรดาร์กะพริบ */}
-          {tacticalNodes.map((node) => {
+          {/* Layer 4: ไอคอน + จุดตรวจจับความร้อน (Hotspots) วางทับด้วยระบบพิกัดเปอร์เซ็นต์ */}
+          {strategicNodes.map((node) => {
             const { left, top } = convertGeoToPercent(node.lat, node.lng);
-            // แสดงเฉพาะจุดที่สัมพันธ์กับภูมิภาคที่เลือก (หรือแสดงทั้งหมดถ้าเลือก GLOBAL)
-            if (activeCountry !== "GLOBAL" && activeCountry !== node.country) return null;
+            
+            // ตรวจสอบแบบคร่าวๆ ว่าโหนดนั้นๆ อยู่ในโซนมืดหรือสว่างจากค่า Longitude เทียบกับเวลา UTC
+            const localHour = (utcHour + node.lng / 15 + 24) % 24;
+            const isNodeNight = localHour >= 18 || localHour < 6;
 
             return (
-              <div key={node.id} style={{ ...styles.radarPin, left, top }}>
+              <div 
+                key={node.id} 
+                style={{ ...styles.radarTarget, left, top }}
+                onMouseEnter={() => setHoveredNode(node.label)}
+                onMouseLeave={() => setHoveredNode(null)}
+              >
+                {/* วงแหวนเรดาร์กะพริบ (Hotspot Circle Effect) */}
                 <div style={{ ...styles.radarPulse, borderColor: node.color }} />
-                <div style={{ ...styles.radarCore, backgroundColor: node.color, boxShadow: `0 0 10px ${node.color}` }} />
-                <div style={styles.radarTooltip}>
-                  <span style={{ color: "#fff" }}>{node.label}</span>
+                {/* จุดไข่แดงแกนกลาง */}
+                <div style={{ ...styles.radarCore, backgroundColor: node.color, boxShadow: `0 0 12px ${node.color}` }} />
+                
+                {/* หน้าต่างป้ายข้อมูลอัจฉริยะ (Dynamic Tooltip) บอกสถานะสว่าง/มืด ทันที */}
+                <div style={styles.tooltipBox}>
+                  <div style={{ color: "#ffaa00", fontWeight: "bold" }}>{node.label}</div>
+                  <div style={{ color: isNodeNight ? "#94a3b8" : "#00ff66", fontSize: "9px", marginTop: "2px" }}>
+                    STATUS: {isNodeNight ? "🌌 NIGHT OPS ACTIVE" : "☀️ DAYLIGHT MONITOR"}
+                  </div>
                 </div>
               </div>
             );
           })}
-        </div>
 
-        {/* แถบแจ้งเตือนข้อมูลวิ่งใต้จอภาพ (Intel Feed) */}
-        <div style={styles.tickerSection}>
-          <div style={styles.tickerBadge}>INTEL FEED</div>
-          <div style={styles.tickerWrapper}>
-            <div style={styles.tickerContent}>
-              [SITUATION ROOM NOTE]: CURRENT ACTIVE SECTOR: {activeCountry} | SYSTEM THEATER OPERATING MODE: {isNight ? "NIGHT LIGHTS ENGAGED (100%)" : "DAYLIGHT BASE MONITORING"} | ENHANCED CROSSFADE READY v2.8.5 ...
-            </div>
-          </div>
         </div>
       </section>
 
-      {/* DASHBOARD BOTTOM ROW: AI ANALYSIS PANEL */}
-      <section style={styles.footerGrid}>
-        <div style={styles.footerPanel}>
-          <div style={styles.panelTitle}>COMMANDER INSIGHTS & TACTICAL LIVE STATUS</div>
-          <div style={styles.panelContent}>
-            <p style={{ color: "#8a9ba8", fontSize: "12px", margin: 0, lineHeight: "1.6" }}>
-              ยินดีด้วยครับพี่สิริวิชญ์! ระบบทำการเชื่อมต่อแผนที่ยุทธวิธี 8-Bit สมบูรณ์แบบแล้ว เลเยอร์ตรวจจับเวลา (Local Time-Based) กำลังทำงานอัตโนมัติ 
-              หากเข้าสู่ช่วงเวลากลางคืน (หลัง 18:00 น.) ภาพจะทำการเฟดเปลี่ยนเป็นโหมดสปอตไลท์ทหารและแสงไฟนีออนของเมืองหลวงทันที 
-              พี่สามารถทดสอบคลิกเปลี่ยน SECTOR ที่หัวเว็บเพื่อสั่งให้มุมกล้องล็อกเป้าและซูมเจาะจงรายประเทศได้ทันทีครับ!
-            </p>
-          </div>
+      {/* BOTTOM ANALYSIS BAR */}
+      <footer style={styles.footerBar}>
+        <div style={styles.intelBadge}>SYS INSIGHT</div>
+        <div style={styles.intelText}>
+          [ANALYTICS] เงากลางคืนจำลองคำนวณจากมุมตกกระทบของดวงอาทิตย์อ้างอิงเวลานาฬิกา UTC ปัจจุบัน | โหนดภูมิภาคเอเชีย (TH/RU) เข้าสู่เขตปฏิบัติการกลางคืนอย่างสมบูรณ์ | โซนอเมริกา (US) อยู่ในเขตแสงสว่าง...
         </div>
-      </section>
+      </footer>
     </div>
   );
 }
 
-/* TACTICAL STYLES SHEET */
+/* TACTICAL ENGINE STYLES */
 const styles: { [key: string]: React.CSSProperties } = {
-  dashboardContainer: { backgroundColor: "#06090f", color: "#fff", fontFamily: "monospace", width: "100%", minHeight: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" },
-  header: { backgroundColor: "#0b111e", borderBottom: "2px solid #ff3333", height: "55px", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 20px", zIndex: 30 },
-  brandZone: { display: "flex", alignItems: "center", gap: "10px" },
-  pulseDot: { width: "8px", height: "8px", backgroundColor: "#ff3333", borderRadius: "50%", boxShadow: "0 0 8px #ff3333", animation: "ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite" },
-  brandTitle: { fontWeight: "bold", fontSize: "14px", letterSpacing: "1px", color: "#e1e8ed" },
-  editionText: { color: "#ffaa00", fontSize: "10px", marginLeft: "5px" },
-  regionSelector: { display: "flex", gap: "6px", alignItems: "center" },
-  sectorBtn: { border: "1px solid", padding: "4px 12px", fontSize: "11px", fontFamily: "monospace", fontWeight: "bold", borderRadius: "3px", cursor: "pointer", transition: "all 0.2s ease" },
-  timeZone: { textAlign: "right" },
-  timeLabel: { display: "block", fontSize: "8px", color: "#556b82" },
-  timeText: { fontSize: "13px", color: "#ffaa00", fontWeight: "bold" },
-  mapTheater: { position: "relative", width: "100%", height: "60vh", backgroundColor: "#020408", borderBottom: "1px solid #1a2333", overflow: "hidden" },
-  zoomWidget: { position: "absolute", top: "20px", right: "20px", backgroundColor: "rgba(11,17,30,0.95)", border: "1px solid #1a2333", borderRadius: "4px", display: "flex", flexDirection: "column", alignItems: "center", width: "45px", zIndex: 40, padding: "5px 0", boxShadow: "0 4px 15px rgba(0,0,0,0.5)" },
-  zoomBtn: { backgroundColor: "transparent", border: "none", color: "#fff", fontSize: "16px", cursor: "pointer", width: "100%", padding: "4px 0", fontWeight: "bold" },
-  zoomIndicator: { fontSize: "9px", color: "#ffaa00", margin: "2px 0", fontFamily: "monospace" },
-  mapViewWindow: { width: "100%", height: "100%", position: "relative", transition: "transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)" },
-  mapLayerBase: { width: "100%", height: "100%", objectFit: "cover" },
-  mapLayerOverlay: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", transition: "opacity 2s ease-in-out", pointerEvents: "none" },
-  gridOverlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,2
+  dashboardContainer: { backgroundColor: "#04060a", color: "#fff", fontFamily: "monospace", width: "100%", minHeight: "100vh", display: "flex", flexDirection: "column" },
+  header: { backgroundColor: "#090d16", borderBottom: "2px solid #ff3333", height: "50px", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 20px", zIndex: 100 },
+  brandZone: { display: "flex", alignItems: "center", gap: "8px" },
+  pulseDot: { width: "8px", height: "8px", backgroundColor: "#00ff66", borderRadius: "50%", boxShadow: "0 0 8px #00ff66" },
+  brandTitle: { fontWeight: "bold", fontSize: "13px", letterSpacing: "1px" },
+  versionBadge: { color: "#ffaa00", fontSize: "9px" },
+  statusDisplay: { fontSize: "11px" },
+  clockZone: { textAlign: "right" },
+  clockLabel: { display: "block", fontSize: "8px", color: "#475569" },
+  clockText: { fontSize: "12px", color: "#ffaa00", fontWeight: "bold" },
+  
+  // โซนแสดงแผนที่หลัก
+  mapTheater: { flex: 1, backgroundColor: "#020406", display: "flex", justifyContent: "center", alignItems: "center", padding: "10px", position: "relative" },
+  mapWrapper: { position: "relative", width: "100%", height: "100%", maxWidth: "1200px", aspectRatio: "24/11", overflow: "hidden", border: "2px solid #1e293b", borderRadius: "6px" },
+  mapBackground: { width: "100%", height: "100%", objectFit: "cover" },
+  
+  // 🌌 เลเยอร์เงาครอบทับ (โหมดคูณสี Mix-Blend-Mode ช่วยให้ภาพพื้นหลังไม่สูญเสียความละเอียด 8-Bit)
+  nightShadowLayer: { position: "absolute", top: 0, left: 0, width: "200%", height: "100%", pointerEvents: "none", mixBlendMode: "multiply", transition: "transform 0.5s linear", zIndex: 10 },
+  gridOverlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.01) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.01) 1px, transparent 1px)", backgroundSize: "20px 20px", pointerEvents: "none", zIndex: 20 },
+  
+  // จุดพิกัดเรดาร์ Hotspot ต่างๆ บนแผนที่
+  radarTarget: { position: "absolute", width: "16px", height: "16px", transform: "translate(-50%, -50%)", zIndex: 30, cursor: "pointer" },
+  radarCore: { width: "6px", height: "6px", borderRadius: "50%", position: "absolute", top: "5px", left: "5px" },
+  radarPulse: { width: "16px", height: "16px", border: "1px solid", borderRadius: "50%", position: "absolute", top: 0, left: 0, animation: "radarGlow 2s infinite linear" },
+  
+  // กล่อง Tooltip บอกรายละเอียดความสว่างแต่ละโหนด
+  tooltipBox: { position: "absolute", bottom: "22px", left: "50%", transform: "translateX(-50%)", backgroundColor: "rgba(9,13,22,0.95)", border: "1px solid #334155", padding: "5px 10px", borderRadius: "4px", fontSize: "10px", whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(0,0,0,0.6)", pointerEvents: "none" },
+  
+  // แถบวิ่งด้านล่างสุด
+  footerBar: { height: "32px", backgroundColor: "#090d16", borderTop: "1px solid #1e293b", display: "flex", alignItems: "center" },
+  intelBadge: { backgroundColor: "#ff3333", color: "#fff", fontSize: "9px", fontWeight: "bold", padding: "0 12px", height: "100%", display: "flex", alignItems: "center" },
+  intelText: { fontSize: "11px", color: "#94a3b8", paddingLeft: "15px", whiteSpace: "nowrap", overflow: "hidden" }
+};
