@@ -35,7 +35,15 @@ export default function WorldMap3D() {
 
   return (
     <div className="w-full h-full flex items-center justify-center">
-      <DynamicGlobe // Teal atmosphereAltitude="{0.15}" atmosphereColor="rgba(20, 184, 166, 0.5)" backgroundImageUrl="//[unpkg.com/three-globe/example/img/night-sky.png](https://unpkg.com/three-globe/example/img/night-sky.png)" bumpImageUrl="//[unpkg.com/three-globe/example/img/earth-topology.png](https://unpkg.com/three-globe/example/img/earth-topology.png)" globeImageUrl="//[unpkg.com/three-globe/example/img/earth-blue-marble.jpg](https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg)" ref="{globeRef}" showAtmosphere="{true}" สีเรืองแสงออร่าของชั้นบรรยากาศโทน แบบไทย/>
+      <DynamicGlobe 
+        ref={globeRef}
+        showAtmosphere={true}
+        atmosphereAltitude={0.15}
+        atmosphereColor="rgba(20, 184, 166, 0.5)"
+        backgroundImageUrl="https://unpkg.com/three-globe/example/img/night-sky.png"
+        bumpImageUrl="https://unpkg.com/three-globe/example/img/earth-topology.png"
+        globeImageUrl="https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
+      />
     </div>
   );
 }
