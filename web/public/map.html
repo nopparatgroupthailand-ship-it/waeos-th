@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firefly OS v1.58 - Procurement Command Center</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&family=Press+Start+2P&family=Sarabun:wght@300;400;500;600;700&display=swap');
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #05070f;
+            color: #d1d5db;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Bar Navigation - แถบควบคุมด้านบน */
+        .top-nav {
+            background-color: #090d16;
+            border-bottom: 2px solid #1e293b;
+            height: 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 16px;
+            z-index: 100;
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .menu-toggle {
+            background: #111827;
+            border: 1px solid #334155;
+            color: #38bdf8;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 14px;
+            border-radius: 4px;
+        }
+
+        .nav-btn {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #94a3b8;
+            font-family: 'Chakra Petch', sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        .nav-btn.active {
+            background: #065f46;
+            color: #34d399;
+            border-color: #059669;
+            box-shadow: 0 0 10px rgba(52, 211, 153, 0.2);
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-family: 'Chakra Petch', sans-serif;
+        }
+
+        .clock-display {
+            color: #4ade80;
+            font-weight: bold;
+            letter-spacing: 1px;
+            font-size: 13px;
+            background: #022c22;
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid #065f46;
+        }
+
+        /* Workspace Main Layout - แบ่งสัดส่วนหน้าจอ 70/30 */
+        .main-container {
+            display: block;
+            position: relative;
+            height: calc(100vh - 50px);
+            width: 100%;
+        }
+
+        /* ฝั่งหน้าจอแผนที่ 70% */
+        .map-section {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 70%;
+            background-color: #080c14;
+            border-right: 2px solid #1e293b;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* ฝั่งกล่องข้อความสนทนา AI 30% */
+        .panel-sidebar {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 30%;
+            background-color: #0b0f19;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.6);
+        }
+
+        .section-header {
+            background-color: #111827;
+            border-bottom: 1px solid #1e293b;
+            padding: 10px 16px;
+            font-family: 'Chakra Petch', sans-serif;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title-retro {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 11px;
+            color: #ef4444;
+            text-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
+        }
+
+        /* พื้นหลังแผนที่จำลอง */
+        .map-canvas-wrapper {
+            flex: 1;
+            position: relative;
+            background-color: #0b132b; 
+            overflow: auto;
+            image-rendering: pixelated;
+        }
+
+        /* โครงสร้างกราฟิกแผนที่โลก 8-Bit สไตล์ Red Alert */
+        .world-map-graphic {
+            position: relative;
+            width: 1300px;
+            height: 680px;
+            background-color: #101c36; 
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        /* บล็อกพิกเซลทวีปต่างๆ */
+        .pixel-continent {
+            position: absolute;
+            background-color: #2b4c1f; 
+            border: 2px solid #3f6e2e;
+            box-shadow: inset 0 0 12px rgba(0,0,0,0.5);
+            border-radius: 4px;
+        }
+
+        /* พิกัดจำลองรูปร่างทวีป */
+        .na-1 { left: 80px; top: 100px; width: 280px; height: 180px; background-color: #385e25; }
+        .na-2 { left: 140px; top: 250px; width: 160px; height: 110px; }
+        .sa-1 { left: 240px; top: 380px; width: 140px; height: 240px; background-color: #2e541c; }
+        .eu-1 { left: 520px; top: 80px; width: 420px; height: 190px; background-color: #325921; }
+        .as-1 { left: 750px; top: 120px; width: 450px; height: 260px; background-color: #2b4c1f; }
+        .af-1 { left: 560px; top: 300px; width: 190px; height: 250px; background-color: #405c21; }
+        .au-1 { left: 980px; top: 460px; width: 180px; height: 130px; background-color: #4b6122; }
+
+        /* กล่องอินเตอร์เฟสควบคุม (HUD Box) บนแผนที่ */
+        .hud-overlay-box {
+            position: absolute;
+            background: rgba(9, 13, 22, 0.9);
+            border: 1px solid #334155;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Chakra Petch', sans-serif;
+            z-index: 10;
+        }
+
+        .hud-hotspots {
+            left: 20px;
+            bottom: 80px;
+            width: 220px;
+        }
+
+        .hud-hotspots h4 {
+            color: #ef4444;
+            margin-bottom: 6px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+        }
+
+        .hotspot-item {
+            font-size: 12px;
+            margin: 4px 0;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .hotspot-dot {
+            width: 6px;
+            height: 6px;
+            background: #ef4444;
+            border-radius: 50%;
+        }
+
+        /* อนิเมชั่นจุดเรดาร์กระพริบ (Radar Nodes) */
+        .radar-node {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background: #ef4444;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            animation: radar-pulse 2s infinite;
+        }
+
+        @keyframes radar-pulse {
+            0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+            100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        /* แถบอักษรข่าววิ่งด้านล่าง (News Ticker) */
+        .ticker-bar {
+            background-color: #090d16;
+            border-top: 1px solid #1e293b;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            font-family: 'Chakra Petch', sans-serif;
+            font-size: 12px;
+            overflow: hidden;
+        }
+
+        .ticker-label {
+            color: #ef4444;
+            font-weight: bold;
+            margin-right: 12px;
+            white-space: nowrap;
+        }
+
+        .ticker-content {
+            color: #38bdf8;
+            white-space: nowrap;
+            animation: marquee 25s linear infinite;
+        }
+
+        @keyframes marquee {
+            0% { transform: translate3d(100%, 0, 0); }
+            100% { transform: translate3d(-100%, 0, 0); }
+        }
+
+        /* หน้าต่างห้องสนทนา AI */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-history {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .chat-bubble {
+            margin-bottom: 12px;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 13.5px;
+            line-height: 1.5;
+            max-width: 85%;
+            word-wrap: break-word;
+            clear: both;
+        }
+
+        .chat-bubble.ai {
+            background-color: #1e293b;
+            border-left: 3px solid #38bdf8;
+            color: #f1f5f9;
+            float: left;
+        }
+
+        .chat-bubble.user {
+            background-color: #1e1b4b;
+            border-right: 3px solid #818cf8;
+            color: #ffffff;
+            float: right;
+        }
+
+        .chat-bubble.sys-alert {
+            background-color: rgba(30, 41, 59, 0.5);
+            border: 1px dashed #334155;
+            color: #94a3b8;
+            font-family: 'Chakra Petch', sans-serif;
+            font-size: 12px;
+            max-width: 100%;
+            float: none;
+        }
+
+        .chat-input-row {
+            padding: 12px;
+            background-color: #090d16;
+            border-top: 1px solid #1e293b;
+            display: flex;
+            gap: 8px;
+        }
+
+        .chat-field {
+            flex: 1;
+            background-color: #111827;
+            border: 1px solid #334155;
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: 4px;
+            font-family: 'Sarabun', sans-serif;
+            font-size: 13.5px;
+            outline: none;
+        }
+
+        .chat-field:focus {
+            border-color: #38bdf8;
+        }
+
+        .action-send {
+            background-color: #38bdf8;
+            color: #0f172a;
+            border: none;
+            padding: 0 16px;
+            font-family: 'Chakra Petch', sans-serif;
+            font-weight: 700;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .action-send:hover {
+            background-color: #7dd3fc;
+        }
+
+        /* แถบสถานะทรัพยากรเครื่องระบบจำลองดลล่าง */
+        .system-tray {
+            background-color: #030712;
+            border-top: 1px solid #111827;
+            padding: 6px 12px;
+            font-family: 'Chakra Petch', sans-serif;
+            font-size: 11px;
+            color: #4b5563;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .tray-metric {
+            color: #10b981;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-nav">
+        <div class="nav-left">
+            <button class="menu-toggle">☰</button>
+            <button class="nav-btn active">SITUATION ROOM</button>
+            <button class="nav-btn">INTEL LAYERS</button>
+            <button class="nav-btn">STRATEGIC POSTURE</button>
+        </div>
+        <div class="nav-right">
+            <span style="color: #64748b;">SYSTEM TIME (UTC):</span>
+            <div class="clock-display" id="liveClock">00:00:00 200</div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        
+        <div class="map-section">
+            <div class="section-header">
+                <span class="header-title-retro">PROTOMAPS: 8-BIT ENGAGEMENT THEATER v2.8.0</span>
+                <span style="color: #475569; font-size: 11px;">LAT: 18.552 / LON: 0.0000 / ZOOM: 1.5</span>
+            </div>
+            
+            <div class="map-canvas-wrapper">
+                <div class="world-map-graphic">
+                    
+                    <div class="pixel-continent na-1"></div>
+                    <div class="pixel-continent na-2"></div>
+                    <div class="pixel-continent sa-1"></div>
+                    <div class="pixel-continent eu-1"></div>
+                    <div class="pixel-continent as-1"></div>
+                    <div class="pixel-continent af-1"></div>
+                    <div class="pixel-continent au-1"></div>
+
+                    <div class="radar-node" style="left: 210px; top: 180px;" title="Phrae Sub-Node"></div>
+                    <div class="radar-node" style="left: 680px; top: 150px;" title="Moscow Core Node"></div>
+                    <div class="radar-node" style="left: 820px; top: 290px;" title="Bangkok Main Server"></div>
+                    <div class="radar-node" style="left: 640px; top: 380px;" title="Africa Central Gateway"></div>
+
+                    <div class="hud-overlay-box" style="right: 30px; top: 30px; width: 200px;">
+                        <span style="color:#ef4444; font-weight:bold; font-size:12px;">🔴 DEFCON 1 ACTIVE</span>
+                        <p style="font-size:11px; color:#94a3b8; margin-top:4px;">Setun Logic Array status online. Memory mapping secure.</p>
+                    </div>
+
+                    <div class="hud-overlay-box hud-hotspots">
+                        <h4>[•] SOVIET HOTSPOTS</h4>
+                        <div class="hotspot-item"><div class="hotspot-dot"></div> TESLA GRID ACTIVE</div>
+                        <div class="hotspot-item"><div class="hotspot-dot" style="background:#38bdf8"></div> ALLIED MOVEMENTS</div>
+                        <div class="hotspot-item"><div class="hotspot-dot" style="background:#eab308"></div> WEATHER STORM TECH</div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="ticker-bar">
+                <span class="ticker-label">LIVE NEWS FEED //</span>
+                <div class="ticker-content">
+                    [พ.ร.บ. จัดซื้อจัดจ้างฯ] การจำลองโครงสร้างข้อมูลพัสดุในระบบหน่วยความจำเครื่อง RAM 100% เสร็จสมบูรณ์ ... ยืนยันสถาปัตยกรรมไร้สายฐานสาม Setun ไม่มีการรั่วไหลข้อมูลสู่อินเทอร์เน็ตภายนอก ... ระบบอัปเดตหนังสือเวียนล่าสุด ว.158 พร้อมทำงาน ...
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-sidebar">
+            <div class="section-header">
+                <span style="color: #38bdf8;">LOCAL TERNARY ASSISTANT</span>
+                <span style="background: #1e293b; color: #f3f4f6; font-size: 10px; padding: 2px 6px; border-radius: 4px;">QWEN-3 MODULE</span>
+            </div>
+
+            <div class="chat-container">
+                <div class="chat-history" id="chatScreen">
+                    <div class="chat-bubble sys-alert">
+                        [SYSTEM UPDATE] บูตระบบฐานข้อมูลความรู้พัสดุราชการเสร็จสมบูรณ์ ยืนยันขนาดชุดโมเดลประมวลผล 412 MB เชื่อมโยงดัชนีผ่าน WebAssembly + WebGPU เรียบร้อยแล้ว
+                    </div>
+                    <div class="chat-bubble ai">
+                        สวัสดีครับพี่สิริวิชญ์ ระบบอัปเกรดหน้าจอ Command Center เชื่อมต่อโครงข่ายแผนที่ยุทธวิธี 8-Bit เรียบร้อยแล้วครับ ข้อมูลระเบียบ พ.ร.บ. จัดซื้อจัดจ้างฯ 2560 และหนังสือเวียนคณะกรรมการวินิจฉัยทั้งหมด รันแบบ In-Memory อยู่บน RAM ของเครื่อง 100% พร้อมรับคำสั่งวิเคราะห์ข้อมูลแล้วครับ
+                    </div>
+                </div>
+
+                <div class="chat-input-row">
+                    <input type="text" id="chatInputField" class="chat-field" placeholder="ป้อนคำถามกฎหมายพัสดุหรือคำสั่งควบคุม..." onkeydown="if(event.key === 'Enter') executeQuery()">
+                    <button class="action-send" onclick="executeQuery()">SEND</button>
+                </div>
+            </div>
+
+            <div class="system-tray">
+                <div>LOGIC MODEL: <span class="tray-metric">Ternary 1.58-Bit</span></div>
+                <div>LOCAL RAM: <span class="tray-metric">~412 MB / Free</span></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // อัปเดตเวลาระบบจำลองค่ามิลลิวินาทีวิ่งแบบเรียลไทม์
+        function updateClock() {
+            const now = new Date();
+            const hrs = String(now.getUTCHours()).padStart(2, '0');
+            const mins = String(now.getUTCMinutes()).padStart(2, '0');
+            const secs = String(now.getUTCSeconds()).padStart(2, '0');
+            const ms = String(Math.floor(Math.random() * 900) + 100);
+            document.getElementById('liveClock').innerText = `${hrs}:${mins}:${secs} ${ms}`;
+        }
+        setInterval(updateClock, 100);
+
+        // ระบบจำลองกระบวนการวิเคราะห์และดึงคำตอบกฎหมายพัสดุจาก RAM (Local Inference)
+        function executeQuery() {
+            const field = document.getElementById('chatInputField');
+            const screen = document.getElementById('chatScreen');
+            const userText = field.value.trim();
+
+            if (!userText) return;
+
+            // แสดงข้อความของผู้ใช้ฝั่งขวา
+            const userBubble = document.createElement('div');
+            userBubble.className = 'chat-bubble user';
+            userBubble.innerText = userText;
+            screen.appendChild(userBubble);
+
+            field.value = '';
+            screen.scrollTop = screen.scrollHeight;
+
+            // คำนวณส่งผลลัพธ์ตอบกลับจากข้อมูลเงื่อนไขระเบียบพัสดุ
+            setTimeout(() => {
+                const aiBubble = document.createElement('div');
+                aiBubble.className = 'chat-bubble ai';
+
+                if (userText.includes('เฉพาะเจาะจง') || userText.includes('วงเงิน')) {
+                    aiBubble.innerHTML = "<b>[ตรวจพบมาตราจัดซื้อจัดจ้างผ่านโมดูล RAG Local]</b><br>จากการสแกนความเชื่อมโยงในหน่วยความจำชั่วคราว วงเงินไม่เกิน 500,000 บาท เข้าเงื่อนไข <b>วิธีเฉพาะเจาะจง ตามระเบียบกระทรวงการคลังฯ พ.ศ. 2560 ข้อ 22 และ พ.ร.บ. มาตรา 56 (1) (ข)</b> ดำเนินการจัดทำรายงานขอซื้อขอจ้างเสนอหัวหน้าหน่วยงานรัฐเพื่ออนุมัติได้ทันทีครับ";
+                } else if (userText.includes('ปรับ') || userText.includes('สัญญา')) {
+                    aiBubble.innerHTML = "<b>[ระบบวิเคราะห์ความเสี่ยงด้านค่าปรับสัญญา]</b><br>กรณีคู่สัญญาผิดสัญญาหรือส่งมอบงานล่าช้า ต้องบังคับใช้หลักเกณฑ์อัตราร้อยละ 0.01 - 0.20 ต่อวัน ตาม <b>พ.ร.บ. มาตรา 102</b> โดยระบบแจ้งเตือนให้ท่านทำการตรวจสอบระเบียบพัสดุ ข้อ 162 ควบคู่กับเงื่อนไขในหนังสือเวียนล่าสุด เพื่อป้องกันข้อผิดพลาดทางวินัยการเงินการคลังครับ";
+                } else {
+                    aiBubble.innerHTML = "<b>[ประมวลผลโลจิกฐานสามสำเร็จ - อ้างอิงระบบความรู้พัสดุ]</b><br>ระบบทำการวิเคราะห์เงื่อนไขที่ป้อนเข้ามาเรียบร้อยแล้ว ข้อมูลทั้งหมดถูกประมวลผลเปรียบเทียบตรรกะแบบเงื่อนไขภายในหน่วยความจำอย่างปลอดภัย สามารถดำเนินการบันทึกเสนอรายงานพัสดุได้ตามระเบียบปกติครับ";
+                }
+
+                screen.appendChild(aiBubble);
+                screen.scrollTop = screen.scrollHeight;
+            }, 750);
+        }
+    </script>
+</body>
+</html>
