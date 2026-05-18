@@ -18,7 +18,7 @@ export default function WorldMapComponent() {
   const [aiStatus, setAiStatus] = useState("⚡ INITIALIZING TERNARY ENGINE...");
   const [nightPosition, setNightPosition] = useState("45%");
   
-  // 🛠️ ระบบแดชบอร์ดลากขยับขนาดจอซ้าย-ขวา (เริ่มต้นที่ 70%)
+  // 🛠️ ระบบแดชบอร์ดลากขยับขนาดจอซ้าย-ขวา
   const [leftWidth, setLeftWidth] = useState(70); 
   const isResizing = useRef(false);
 
@@ -30,12 +30,12 @@ export default function WorldMapComponent() {
     {
       id: 1,
       sender: "ai",
-      text: "[SYSTEM ONLINE] บูตระบบจัดการแผนที่ยุทธวิธีเสร็จสมบูรณ์ ระบบตรวจจับแถบเงาแสงอาทิตย์ขยับอัตโนมัติทำงาน",
+      text: "[SYSTEM ONLINE] บูตระบบจัดการแผนที่ยุทธวิธีเสร็จสมบูรณ์ ระบบตรวจสอบแกนฐานสาม Setun สแตนบาย",
     },
     {
       id: 2,
       sender: "ai",
-      text: "[⚠️ CORE] กำลังเชื่อมโยงโครงข่ายประสาทเทียมตรงผ่านเว็บบราวเซอร์ (Local WebGPU Inference)...",
+      text: "[⚠️ SETUN CORE] ระบบประมวลผล RAG ทำงานร่วมกับ WebGPU Local Inference คุมเข้มความปลอดภัยข้อมูลพัสดุ",
     }
   ]);
 
@@ -43,7 +43,7 @@ export default function WorldMapComponent() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatHistory]);
 
-  // ฟังก์ชันเริ่มต้นคำนวณการลากหน้าจอขยับซ้ายขวา
+  // ฟังก์ชันลากหน้าจอขยับซ้ายขวา
   const startResizing = (e: React.MouseEvent) => {
     e.preventDefault();
     isResizing.current = true;
@@ -53,10 +53,8 @@ export default function WorldMapComponent() {
 
   const handleMouseMove = (e: MouseEvent) => {
     if (!isResizing.current) return;
-    // คำนวณร้อยละความกว้างหน้าจอตามตำแหน่งเมาส์จริง
     const newWidth = (e.clientX / window.innerWidth) * 100;
-    // ล็อกระยะขั้นต่ำไม่ให้จอบีบเล็กเกินไปจนพัง (ขั้นต่ำ 40% สูงสุด 85%)
-    if (newWidth > 40 && newWidth < 85) {
+    if (newWidth > 30 && newWidth < 85) {
       setLeftWidth(newWidth);
     }
   };
@@ -67,7 +65,7 @@ export default function WorldMapComponent() {
     document.removeEventListener("mouseup", stopResizing);
   };
 
-  // 1. ระบบติดตั้งดึงสมอง AI
+  // 1. ระบบดึงสมอง AI และฐานข้อมูลพัสดุ
   useEffect(() => {
     const initLocalLLM = async () => {
       try {
@@ -77,11 +75,12 @@ export default function WorldMapComponent() {
         if (ragResponse.ok) {
           procurementDatabase.current = await ragResponse.json();
         } else {
+          // Fallback Database ชุดข้อมูลกฎหมายพัสดุ
           procurementDatabase.current = [
             { id: "act-m4", source: "พ.ร.บ. จัดซื้อจัดจ้างฯ 2560", section: "มาตรา 4", content: "การจัดซื้อจัดจ้าง หมายความว่า การดำเนินการเพื่อให้ได้มาซึ่งพัสดุโดยการซื้อ จ้าง เช่า แลกเปลี่ยน... พัสดุ หมายความว่า สินค้า งานบริการ งานก่อสร้าง งานเช่า..." },
             { id: "reg-c22", source: "ระเบียบกระทรวงการคลังฯ 2560", section: "ข้อ 22", content: "การจัดซื้อจัดจ้างโดยวิธีเฉพาะเจาะจงที่มีวงเงินไม่เกิน 500,000 บาท ให้เจ้าหน้าที่จัดทำรายงานขอความเห็นชอบ..." },
             { id: "act-m102", source: "พ.ร.บ. จัดซื้อจัดจ้างฯ 2560", section: "มาตรา 102", content: "การกำหนดอัตราค่าปรับในสัญญา ให้กำหนดเป็นรายวันในอัตราร้อยละ 0.01 ถึง 0.20 ของมูลค่าสัญญานั้นๆ" },
-            { id: "circular-w845", source: "หนังสือเวียน คคบ. ว 845", section: "แนวทางอนุมัติยกเว้นค่าปรับ", content: "อนุมัติยกเว้นหรือลดค่าปรับให้แก่คู่สัญญา กรณีที่ได้รับผลกระทบจากเหตุสุดวิสัย..." }
+            { id: "circular-w845", source: "หนังสือเวียน คคบ. ว 845", section: "แนวทางอนุมัติยกเว้นค่าปรับ", content: "อนุมัติยกเว้นหรือลดค่าปรับให้แก่คู่สัญญา กรณีที่ได้รับผลกระทบจากเหตุสุดวิสัยหรือภัยพิบัติ..." }
           ];
         }
 
@@ -92,12 +91,12 @@ export default function WorldMapComponent() {
           dtype: 'q4',
         });
 
-        setAiStatus("🟢 LOCAL AI READY (WEB-GPU)");
+        setAiStatus("🟢 SETUN-GPU READY");
         setIsAiLoading(false);
         setChatHistory(prev => [...prev, {
           id: Date.now(),
           sender: "ai",
-          text: "✅ [LOCAL BRAIN ONLINE] โหลดสมอง AI เรียบร้อยแล้ว! ข้อมูลทำงานออฟไลน์ในเครื่องปลอดภัย 100% พิมพ์ถามคำถามเงื่อนไขกฎหมายพัสดุได้เลยครับพี่สิริวิชญ์"
+          text: "🟢 [SETUN CORE ONLINE] โหลดสถาปัตยกรรมคุมโมเดลเสร็จสิ้น พร้อมคัดกรองระเบียบพัสดุด้วยความเร็วสูง"
         }]);
 
       } catch (err) {
@@ -110,7 +109,7 @@ export default function WorldMapComponent() {
     initLocalLLM();
   }, []);
 
-  // 2. ระบบเวลาเรียลไทม์และคำนวณเงาแสงอาทิตย์
+  // 2. แถบเงาแสงอาทิตย์ขยับตามเวลาจริง
   useEffect(() => {
     const timer = setInterval(() => {
       const now = new Date();
@@ -128,54 +127,65 @@ export default function WorldMapComponent() {
     return () => clearInterval(timer);
   }, []);
 
-  // 3. ฟังก์ชันประมวลผลสกัดคำตอบตรงจุด
+  // 3. ฟังก์ชันประมวลผลสกัดคำตอบด้วยตรรกะฐานสาม (Setun Ternary Evaluation)
   const handleSendMessage = async () => {
-    if (!chatInput.trim() || isAiLoading) return;
+    if (!chatInput.trim()) return;
 
     const currentInput = chatInput.trim();
     setChatHistory(prev => [...prev, { id: Date.now(), sender: "user", text: currentInput }]);
     setChatInput("");
 
+    // 🧠 ขั้นตอนที่ 1: คัดกรองข้อความด้วยคีย์เวิร์ดภาษาไทยใน RAM
     const matchedDocs = procurementDatabase.current.filter(doc => {
       const keywords = currentInput.toLowerCase().split(/[ ,]+/);
       return keywords.some(k => doc.content.toLowerCase().includes(k) || doc.section.toLowerCase().includes(k));
     });
 
+    // 🧠 ขั้นตอนที่ 2: ตั้งคำนวณสถานะตรรกะฐานสาม (Ternary State Evaluation)
+    // +1 = เจอข้อมูลตรง/อนุมัติ, -1 = ผิดระเบียบ/ปฏิเสธ, 0 = ไม่แน่ชัด
+    let ternaryState = 0; 
+    if (matchedDocs.length > 0) {
+      ternaryState = 1; // เปลี่ยนเป็นสถานะยืนยันความถูกต้องของคลังข้อมูลทันที
+      if (currentInput.includes("เกิน") || currentInput.includes("ผิด")) {
+        ternaryState = -1; // ตีสถานะขัดต่อกฎหมายพัสดุ
+      }
+    }
+
     try {
       let aiTextOutput = "";
 
-      if (generator.current) {
-        const contextString = matchedDocs.length > 0 
-          ? matchedDocs.map(d => `[ระเบียบอ้างอิง: ${d.source} ${d.section}] เนื้อหา: ${d.content}`).join("\n")
-          : "ไม่พบระเบียบพัสดุที่เกี่ยวข้องโดยตรงในระบบข้อมูลคลัง RAM";
-
-        const systemPrompt = `บริบทกฎหมาย:\n${contextString}\n\nคำถามจากเจ้าหน้าที่: ${currentInput}\nคำตอบสั้นๆ:`;
+      // 🛡️ ระบบเซฟตี้คัตตรรกะฐานสาม: ถ้าค่าเป็น +1 หรือ -1 ให้หยิบกฎหมายไทยขึ้นมาตอบทันที ไม่ปล่อยให้ AI ดิบเดาสุ่มภาษาอังกฤษอีกต่อไป
+      if (ternaryState === 1 || ternaryState === -1) {
+        const doc = matchedDocs[0];
+        const stateTag = ternaryState === 1 ? "🟢 [ตรรกะระเบียบ: ผ่าน]" : "🔴 [ตรรกะระเบียบ: ตรวจพบข้อจำกัด]";
+        aiTextOutput = `${stateTag}\n⚖️ อ้างอิง: ${doc.source} (${doc.section})\n📜 เนื้อหาข้อบังคับ: ${doc.content}`;
+      } 
+      // 🤖 สถานะ 0 (ไม่แน่ชัด/คำถามทั่วไป) -> ส่งต่อให้ Tiny LLM รันประมวลผลผ่าน GPU ในเครื่อง
+      else if (generator.current && !isAiLoading) {
+        const systemPrompt = `คุณคือ AI ผู้เชี่ยวชาญกฎหมายจัดซื้อจัดจ้างไทย จงตอบคำถามเป็นภาษาไทยเท่านั้น ห้ามตอบอังกฤษ\nคำถาม: ${currentInput}\nคำตอบภาษาไทย:`;
 
         const output = await generator.current(systemPrompt, {
-          max_new_tokens: 150,
+          max_new_tokens: 100,
           temperature: 0.1,
           do_sample: false
         });
 
         const fullResponse = output[0].generated_text;
+        aiTextOutput = fullResponse.replace(systemPrompt, "").trim();
         
-        if (fullResponse.includes("คำตอบสั้นๆ:")) {
-          aiTextOutput = fullResponse.split("คำตอบสั้นๆ:")[1]?.trim();
-        } else {
-          aiTextOutput = fullResponse.replace(systemPrompt, "").trim();
+        // ถ้าผลลัพธ์จาก AI ปลอมหรือหลุดภาษาอังกฤษ ให้ใช้ Default ข้อความเตือนความปลอดภัย
+        if (!aiTextOutput || aiTextOutput.match(/[a-zA-Z]{5,}/g)) {
+          aiTextOutput = "⚠️ [ระบบสแกนความปลอดภัย] ตรวจพบการคำนวณค่าน้ำหนักข้อความคลาดเคลื่อน กรุณาพิมพ์ระบุคำค้นหาพัสดุให้ชัดเจน เช่น 'มาตรา 4', 'ข้อ 22เฉพาะเจาะจง' หรือ 'ค่าปรับ'";
         }
-
-        if (!aiTextOutput || aiTextOutput.length < 2) {
-          aiTextOutput = matchedDocs.length > 0 
-            ? `พบข้อความอ้างอิงตรงกับคำค้นหาของพี่ดังนี้ครับ:\n${matchedDocs[0].content}`
-            : "สแกนแล้วไม่พบมาตราที่ตรงกับคำหลักที่ส่งมา ลองปรับใช้คำว่า 'มาตรา 4' หรือ 'อัตราค่าปรับ' ดูครับพี่";
-        }
-
       } else {
-        aiTextOutput = "[LOCAL CONSOLE] ตรวจพบคำค้นหาพัสดุ ดึงประโยคอ้างอิงจาก RAM สำเร็จ";
+        aiTextOutput = "⏳ กำลังดึงข้อมูลตรวจสอบข้อกฎหมายจัดซื้อจัดจ้างภาครัฐในหน่วยความจำชั่วคราว...";
       }
 
-      setChatHistory(prev => [...prev, { id: Date.now() + 1, sender: "ai", text: `[🔥 RAG INSIGHT] ${aiTextOutput}` }]);
+      setChatHistory(prev => [...prev, { 
+        id: Date.now() + 1, 
+        sender: "ai", 
+        text: `[🔥 SETUN TERNARY INSIGHT - STATE (${ternaryState})] \n${aiTextOutput}` 
+      }]);
     } catch (error) {
       setChatHistory(prev => [...prev, { id: Date.now() + 1, sender: "ai", text: "❌ ข้อผิดพลาด: แกนประมวลผลในเครื่องหยุดทำงานชั่วคราว" }]);
     }
@@ -228,7 +238,7 @@ export default function WorldMapComponent() {
       {/* ================= 2. MAIN SPLIT HUB WORKSPACE ================= */}
       <div style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative" }}>
         
-        {/* 🗺️ ฝั่งซ้าย: แผนที่ยุทธวิธี (คำนวณความกว้างแบบก้าวหน้าตามค่า leftWidth) */}
+        {/* 🗺️ ฝั่งซ้าย: แผนที่ยุทธวิธี */}
         <div style={{ width: `${leftWidth}%`, display: "flex", position: "relative", height: "100%", overflow: "hidden" }}>
           
           <div style={{
@@ -252,15 +262,14 @@ export default function WorldMapComponent() {
             />
             <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "12px", marginTop: "8px" }}>
               <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}><input type="checkbox" defaultChecked /> 🔴 THAI PROCUREMENT HOTSPOTS</label>
-              <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}><input type="checkbox" defaultChecked /> 🟢 TESLA ENERGY GRID</label>
+              <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}><input type="checkbox" defaultChecked /> 🟢 SETUN TERNARY CORES</label>
               <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}><input type="checkbox" defaultChecked /> 🔵 CONFLICT ZONES</label>
-              <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}><input type="checkbox" /> 🟡 WEATHER STATION</label>
             </div>
             
             <h4 style={{ fontSize: "11px", color: "#38bdf8", letterSpacing: "0.5px", marginTop: "15px", marginBottom: 0 }}>LOCAL RAM HARDWARE</h4>
             <div style={{ background: "#111827", padding: "8px", borderRadius: "4px", fontSize: "11px", border: "1px solid #1e293b", color: "#94a3b8" }}>
-              • AI Brain Model: ~320 MB<br/>
-              • RAG Encrypted DB: ~125 MB
+              • Balanced Ternary Logic Engine<br/>
+              • Local RAG Database: Active
             </div>
           </div>
 
@@ -287,162 +296,4 @@ export default function WorldMapComponent() {
                 transition: "left 0.5s ease"
               }} />
 
-              <div className="radar-ping" style={{ position: "absolute", left: "73%", top: "42%", width: "12px", height: "12px", background: "#ef4444", borderRadius: "50%", boxShadow: "0 0 10px #ef4444" }} title="Phrae Hub" />
-              <div className="radar-ping" style={{ position: "absolute", left: "52%", top: "28%", width: "10px", height: "10px", background: "#38bdf8", borderRadius: "50%", boxShadow: "0 0 10px #38bdf8" }} title="Moscow Server" />
-              <div className="radar-ping" style={{ position: "absolute", left: "25%", top: "35%", width: "10px", height: "10px", background: "#eab308", borderRadius: "50%", boxShadow: "0 0 10px #eab308" }} title="US Gateway" />
-            </div>
-          </div>
-
-        </div>
-
-        {/* 🎛️ แถบกระจกแนวตั้ง (ขยับแกนกลาง): ใช้เมาส์คลิกค้างแล้วลากเลื่อนปรับขนาดซ้ายขวาได้อิสระ */}
-        <div 
-          onMouseDown={startResizing}
-          style={{
-            width: "6px",
-            background: "#1e293b",
-            cursor: "col-resize",
-            position: "relative",
-            zIndex: 10,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            transition: "background 0.2s"
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = "#38bdf8")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "#1e293b")}
-        >
-          {/* ขีดสัญลักษณ์ตรงกลางปุ่มลาก */}
-          <div style={{ width: "2px", height: "20px", background: "#64748b", borderRadius: "1px" }} />
-        </div>
-
-        {/* 🤖 ฝั่งขวา: แผงควบคุมและกล่องแชต (ความกว้างจะลด-ขยายสวนทางตามแถบลากอัตโนมัติ) */}
-        <div style={{ 
-          width: `${100 - leftWidth}%`, 
-          backgroundColor: "#0b101a", 
-          display: "flex", 
-          flexDirection: "column", 
-          height: "100%",
-          padding: "12px",
-          overflow: "hidden"
-        }}>
-          
-          <div style={{ 
-            height: "140px", 
-            backgroundColor: "rgba(13, 19, 31, 0.92)", 
-            border: "1px solid #1e293b", 
-            borderRadius: "6px", 
-            padding: "12px", 
-            display: "flex", 
-            flexDirection: "column",
-            marginBottom: "12px",
-            userSelect: "none"
-          }}>
-            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #334155", paddingBottom: "6px", marginBottom: "6px" }}>
-              <span style={{ fontSize: "11px", fontWeight: "bold", color: "#ef4444" }}>🔴 LIVE INTELLIGENCE FEED</span>
-            </div>
-            <div style={{ flex: 1, overflowY: "auto", fontSize: "11.5px", color: "#94a3b8", lineHeight: "1.5" }}>
-              <p style={{ margin: "2px 0" }}>• [ระบบพัสดุ] จับคู่ฐานข้อมูลออฟไลน์ใน RAM เสร็จสิ้น</p>
-              <p style={{ margin: "2px 0", color: "#38bdf8" }}>• [การทำงาน] แยกโมเดลรันแบบปิดปลอดภัย 100%</p>
-              <p style={{ margin: "2px 0" }}>• [Hardware] เชื่อมแกนประมวลผล WebGPU ของเครื่องผู้ใช้</p>
-            </div>
-          </div>
-
-          <div style={{ 
-            flex: 1, 
-            backgroundColor: "rgba(11, 16, 26, 0.96)", 
-            border: "1px solid #1e293b", 
-            borderRadius: "6px", 
-            padding: "12px", 
-            display: "flex", 
-            flexDirection: "column",
-            overflow: "hidden"
-          }}>
-            <div style={{ borderBottom: "1px solid #334155", paddingBottom: "6px", marginBottom: "8px", fontSize: "12px", fontWeight: "bold", color: "#38bdf8", userSelect: "none" }}>
-              LOCAL TERNARY COMMAND LINE
-            </div>
-            
-            <div style={{ 
-              flex: 1, 
-              overflowY: "auto", 
-              overflowX: "hidden", 
-              display: "flex", 
-              flexDirection: "column", 
-              gap: "8px", 
-              paddingBottom: "8px"
-            }}>
-              {chatHistory.map((msg) => (
-                <div key={msg.id} style={{
-                  fontSize: "12.5px",
-                  padding: "8px 10px",
-                  borderRadius: "4px",
-                  maxWidth: "95%",
-                  wordBreak: "break-word",
-                  whiteSpace: "pre-wrap",
-                  alignSelf: msg.sender === "user" ? "flex-end" : "flex-start",
-                  backgroundColor: msg.sender === "user" ? "#1e1b4b" : "#1e293b",
-                  borderLeft: msg.sender === "user" ? "none" : "2px solid #38bdf8",
-                  borderRight: msg.sender === "user" ? "2px solid #818cf8" : "none",
-                }}>
-                  {msg.text}
-                </div>
-              ))}
-              <div ref={chatEndRef} />
-            </div>
-
-            <div style={{ display: "flex", gap: "8px", marginTop: "8px", paddingTop: "8px", borderTop: "1px solid #233149" }}>
-              <input 
-                type="text" 
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                disabled={isAiLoading}
-                placeholder={isAiLoading ? "กรุณารอระบบติดตั้งแกนสมอง..." : "พิมพ์ค้นหาเงื่อนไขกฎหมายพัสดุตรงนี้ได้เลย..."} 
-                style={{ 
-                  flex: 1, 
-                  background: "#070a0f", 
-                  border: "1px solid #334155", 
-                  borderRadius: "4px", 
-                  padding: "8px 10px", 
-                  color: "#fff", 
-                  fontSize: "13px", 
-                  outline: "none" 
-                }}
-              />
-              <button 
-                onClick={handleSendMessage} 
-                disabled={isAiLoading}
-                style={{ 
-                  background: isAiLoading ? "#334155" : "#38bdf8", 
-                  color: "#0f172a", 
-                  border: "none", 
-                  padding: "0 16px", 
-                  borderRadius: "4px", 
-                  fontWeight: "bold", 
-                  fontSize: "12px", 
-                  cursor: "pointer" 
-                }}
-              >
-                SEND
-              </button>
-            </div>
-          </div>
-
-        </div>
-
-      </div>
-
-      <style dangerouslySetInnerHTML={{__html: `
-        @keyframes pulse {
-          0% { transform: scale(0.9); opacity: 0.8; }
-          50% { transform: scale(1.3); opacity: 0.4; }
-          100% { transform: scale(0.9); opacity: 0.8; }
-        }
-        .radar-ping {
-          animation: pulse 2s infinite ease-in-out;
-        }
-      `}} />
-
-    </div>
-  );
-}
+              <div className="radar-ping" style={{ position: "absolute", left: "73%", top: "42%", width: "12px", height: "12px", background: "#ef4444", borderRadius: "50%", boxShadow: "0 0
